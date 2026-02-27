@@ -1,5 +1,72 @@
+@import "tailwindcss";
+
+/* ── Tailwind v4 custom design tokens ── */
+@theme {
+  /* Brand colors */
+  --color-primary: #15803d;
+  --color-secondary: #166534;
+  --color-accent: #0284c7;
+  --color-warning: #f97316;
+  --color-danger: #dc2626;
+  --color-success: #16a34a;
+  --color-renats-green: #2f7f34;
+  --color-renats-blue: #0ea5e9;
+
+  /* Trust levels */
+  --color-trust-high: #22c55e;
+  --color-trust-med: #eab308;
+  --color-trust-low: #ef4444;
+
+  /* Typography */
+  --font-sans: "Inter", "Public Sans", "ui-sans-serif", "system-ui";
+  --font-display: 'Public Sans', sans-serif;
+}
+
+@utility hero-mesh-gradient {
+  background-color: #f8fafc;
+  background-image:
+    radial-gradient(at 0% 0%, hsla(142, 46%, 34%, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(199, 89%, 48%, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(142, 46%, 34%, 0.05) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(199, 89%, 48%, 0.1) 0px, transparent 50%);
+}
+
+@utility sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+  background-color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+@utility blur-mask {
+  backdrop-filter: blur(4px);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+@utility premium-lock-overlay {
+  background: #1e293b;
+  opacity: 1;
+}
+
+@utility input-massive {
+  font-size: 2.5rem;
+  font-weight: 800;
+  height: 5rem;
+  text-align: right;
+}
+
+@utility sidebar-active {
+  background-color: #dcfce7;
+  border-left: 6px solid #15803d;
+}
+
+@utility touch-target {
+  min-height: 60px;
+}
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 }
@@ -11,7 +78,7 @@ body {
 
 .hero-mesh-gradient {
   background-color: #f8fafc;
-  background-image: 
+  background-image:
     radial-gradient(at 0% 0%, hsla(142, 46%, 34%, 0.15) 0px, transparent 50%),
     radial-gradient(at 100% 0%, hsla(199, 89%, 48%, 0.1) 0px, transparent 50%),
     radial-gradient(at 100% 100%, hsla(142, 46%, 34%, 0.05) 0px, transparent 50%),

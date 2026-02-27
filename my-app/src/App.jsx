@@ -9,6 +9,11 @@ import WarehouseDashboard from './features/warehouse/WarehouseDashboard';
 import CreateBatchOrder from './features/warehouse/CreateBatchOrder';
 import PickupRequestDetail from './features/warehouse/PickupRequestDetail';
 import Invoice from './features/shared/Invoice';
+import DashboardRecycle from './features/recycling_businesses/dashboardRecycle';
+import MaterialsMarket from './features/recycling_businesses/materialsMarket';
+import PremiumMarket from './features/recycling_businesses/premiumMarket';
+import OrderProcess from './features/recycling_businesses/orderProcess';
+import OrderConfirm from './features/recycling_businesses/orderConfirm';
 import './App.css';
 
 function App() {
@@ -28,6 +33,13 @@ function App() {
         <Route path="/kho/dashboard" element={<WarehouseDashboard />} />
         <Route path="/kho/tao-lo" element={<CreateBatchOrder />} />
         <Route path="/kho/yeu-cau/:id" element={<PickupRequestDetail />} />
+
+        {/* Recycling Businesses */}
+        <Route path="/recycle/dashboard" element={<DashboardRecycle />} />
+        <Route path="/recycle/market" element={<MaterialsMarket />} />
+        <Route path="/recycle/market-premium" element={<PremiumMarket />} />
+        <Route path="/recycle/order-process" element={<OrderProcess />} />
+        <Route path="/recycle/order-confirm" element={<OrderConfirm />} />
 
         {/* Shared */}
         <Route path="/hoa-don/:id" element={<Invoice />} />
