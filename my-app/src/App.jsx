@@ -21,6 +21,9 @@ import MaterialsMarket from './features/recycling_businesses/materialsMarket';
 import PremiumMarket from './features/recycling_businesses/premiumMarket';
 import OrderProcess from './features/recycling_businesses/orderProcess';
 import OrderConfirm from './features/recycling_businesses/orderConfirm';
+import StartOrder from './features/transportation/startOrder';
+import CheckinOrder from './features/transportation/checkinOrder';
+import CheckinOrderStep2 from './features/transportation/checkinOrderStep2';
 import './App.css';
 
 function App() {
@@ -55,6 +58,11 @@ function App() {
         <Route path="/recycle/market-premium" element={<PremiumMarket />} />
         <Route path="/recycle/order-process" element={<OrderProcess />} />
         <Route path="/recycle/order-confirm" element={<OrderConfirm />} />
+
+        {/* Transportation */}
+        <Route path="/van-chuyen/chuyen-xe" element={<StartOrder />} />
+        <Route path="/van-chuyen/checkin" element={<CheckinOrder />} />
+        <Route path="/van-chuyen/di-chuyen" element={<CheckinOrderStep2 />} />
 
         {/* Shared */}
         <Route path="/hoa-don/:id" element={<Invoice />} />
