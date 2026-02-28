@@ -16,6 +16,11 @@ import PartnerListLock from './features/recycling_businesses/partnerListLock';
 import EprReport from './features/recycling_businesses/eprReport';
 import EprInforOrder from './features/recycling_businesses/eprInforOrder';
 import InforPartnerVip from './features/recycling_businesses/InforPartnerVip';
+import DashboardRecycle from './features/recycling_businesses/dashboardRecycle';
+import MaterialsMarket from './features/recycling_businesses/materialsMarket';
+import PremiumMarket from './features/recycling_businesses/premiumMarket';
+import OrderProcess from './features/recycling_businesses/orderProcess';
+import OrderConfirm from './features/recycling_businesses/orderConfirm';
 import './App.css';
 
 function App() {
@@ -45,6 +50,11 @@ function App() {
         <Route path="/nha-may/bao-cao-epr" element={<EprReport />} />
         <Route path="/nha-may/bao-cao-epr/:id" element={<EprInforOrder />} />
         <Route path="/nha-may/doi-tac/:id" element={<InforPartnerVip />} />
+        <Route path="/recycle/dashboard" element={<DashboardRecycle />} />
+        <Route path="/recycle/market" element={<MaterialsMarket />} />
+        <Route path="/recycle/market-premium" element={<PremiumMarket />} />
+        <Route path="/recycle/order-process" element={<OrderProcess />} />
+        <Route path="/recycle/order-confirm" element={<OrderConfirm />} />
 
         {/* Shared */}
         <Route path="/hoa-don/:id" element={<Invoice />} />

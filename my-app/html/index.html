@@ -1,259 +1,220 @@
 <!DOCTYPE html>
-<html class="light" lang="vi">
+<html lang="vi">
 
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Xác nhận Đơn hàng - Xem Ảnh Thực tế - ReNats</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800;900&amp;display=swap"
-    rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap"
     rel="stylesheet" />
   <link
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
     rel="stylesheet" />
-  <script id="tailwind-config">
+  <script>
     tailwind.config = {
-      darkMode: "class",
       theme: {
         extend: {
           colors: {
-            "primary": "#22c55e",
-            "secondary": "#0ea5e9",
-            "background-light": "#f8fdfa",
-            "background-dark": "#06130b",
+            primary: '#2f7f34',
+            secondary: '#1e4d20',
+            accent: '#0ea5e9',
+            'renats-green': '#2f7f34',
+            'renats-blue': '#0ea5e9',
+            'renats-bg': '#f8fafc',
           },
           fontFamily: {
-            "display": ["Public Sans", "sans-serif"]
+            sans: ['Inter', 'sans-serif'],
           },
-          borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
-        },
-      },
+        }
+      }
     }
   </script>
-  <style>
-    body {
-      font-family: "Public Sans", sans-serif;
-    }
-
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    }
-  </style>
 </head>
 
-<body
-  class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-300">
-  <div class="relative flex min-h-screen flex-col overflow-x-hidden">
-    <header
-      class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md px-6 lg:px-20 py-4">
-      <div class="max-w-7xl mx-auto flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <img alt="ReNats Logo" class="h-12 w-auto object-contain"
-            data-alt="ReNats logo showing a stylized green leaf recycling symbol"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqyEONgSUnbFSZUQbXHZeqG4VRiqQf2pHtb1WSDYLLafIyhkABmHuUK48Jp1OmzSuIVpPQlKYNr6eM3KmEOGWCeAOmD46yG4DsRAcXn3WP90EtGMXHc4TkcVFdmLgR5AUcruZkkPeRSjO-ZULibYIkA253wrqK9lKvdikb-9ts83Mg2bLq7y3sKJYVGOshaeqnn0r6F0kFefp0_HSPpKvQphJPObp9OZmJcxc1_-xwrJbdipSuKF9y1iNpQ4fEq91gUhdqcopDPv0" />
-        </div>
-        <nav class="hidden md:flex items-center gap-8">
-          <a class="text-sm font-medium hover:text-primary transition-colors" href="#">Trang chủ</a>
-          <a class="text-sm font-medium hover:text-primary transition-colors" href="#">Dịch vụ</a>
-          <a class="text-sm font-medium text-primary" href="#">Giới thiệu</a>
-          <a class="text-sm font-medium hover:text-primary transition-colors" href="#">Tin tức</a>
-          <a class="text-sm font-medium hover:text-primary transition-colors" href="#">Liên hệ</a>
-        </nav>
+<body class="font-sans text-slate-900 bg-slate-50 min-h-screen flex flex-col">
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
         <div class="flex items-center gap-4">
-          <button
-            class="bg-primary text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-primary/20">
-            Bắt đầu ngay
-          </button>
+          <img alt="Re-Nats Logo" class="w-auto h-12 object-contain"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDK91fcaHmansgwcmixnPW2Kj6N96BE_TB3pFnlNc65ME78ARU4vT0E3i8Kg6UL1wU_n4_Jer0PoE7HlEYEUJK1ZPO35sLjnBf4WilVM4X6DdRfRJrMK2Jhdz9VEJChq0rMRTLR5lKyAy_zh0owPeKq2Z5cJ51_D_2Ti9RvtVlyuvFAgvgCW9gJ0gxogd3eKqpxFUbCIE5NBkhPl6yAB78IAUV21kEKZNKfRmUUv-2yBO5zvsteDFlVgfwFKyCe7u0Aj2jRGz1ZcZk" />
+          <div class="hidden md:block h-6 w-px bg-slate-300"></div>
+          <span class="text-slate-500 font-medium text-sm hidden md:block">Marketplace</span>
+        </div>
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-3 pl-6 border-l border-slate-200">
+            <div class="text-right hidden sm:block">
+              <p class="text-sm font-bold text-slate-700">Nguyễn Văn A</p>
+              <p class="text-xs text-slate-500">Quản lý thu mua</p>
+            </div>
+            <div class="h-10 w-10 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
+              <img alt="User Avatar" class="w-full h-full object-cover"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaOCJwjx5wu3GBVvPbHGqRWTMvqp2cVmKcT3ZJXTmEXviBbRz6psQfBkbZ9ADlhfUbC73qaF7xnmSpF-3MO2fvGDqzDurffZe_bE8je3JtW6kR2CsjeeNIytNJKPKzgd58IQYGRoEwxNLbUjuRpAL7l4bfdO0HZ81BzZh_NAnl8qo0xrVzU0JEAypiGXsnHkdrYJYEYi99QCQJ-P2Hrde_FzoqRQDpuZUep0kuuJy_IZ83Cjulj1wZi4Vq4VuVcRMF-EJsKfvz988" />
+            </div>
+          </div>
         </div>
       </div>
-    </header>
-    <main class="flex-1">
-      <section class="relative overflow-hidden pt-16 pb-24 lg:pt-24 lg:pb-32 px-6 lg:px-20">
-        <div class="max-w-7xl mx-auto">
-          <div class="grid lg:grid-cols-2 gap-12 items-center">
-            <div class="flex flex-col gap-8">
-              <div
-                class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider w-fit">
-                <span class="relative flex h-2 w-2">
-                  <span
-                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                </span>
-                Công Nghệ Tái Sinh
-              </div>
-              <h1 class="text-4xl lg:text-6xl font-black leading-tight text-slate-900 dark:text-white">
-                ReNats – Công Nghệ <span class="text-primary">Tái Sinh</span> Giá Trị
-              </h1>
-              <p class="text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl">
-                ReNats là nền tảng công nghệ kết nối và tối ưu hóa hệ sinh thái thu mua – tái chế phế liệu tại Việt Nam.
-                Chúng tôi mang đến giải pháp quản lý hiện đại, minh bạch và hiệu quả cho chủ vựa, doanh nghiệp tái chế
-                và các đối tác trong chuỗi cung ứng tuần hoàn.
-              </p>
-              <div class="flex flex-wrap gap-4">
-                <button
-                  class="bg-primary text-white px-8 py-4 rounded-xl font-bold text-base hover:shadow-xl transition-all">
-                  Khám phá giải pháp
-                </button>
-                <button
-                  class="border border-slate-200 dark:border-slate-700 px-8 py-4 rounded-xl font-bold text-base hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
-                  Xem video giới thiệu
-                </button>
-              </div>
+    </div>
+  </header>
+  <main class="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="mb-8">
+      <a class="inline-flex items-center text-slate-500 hover:text-primary mb-4 transition-colors" href="#">
+        <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
+        Quay lại danh sách
+      </a>
+      <h1 class="text-3xl font-bold text-slate-900">Xác nhận Đơn hàng</h1>
+      <p class="text-slate-500 mt-2">Vui lòng kiểm tra chất lượng lô hàng qua hình ảnh thực tế trước khi xác nhận.</p>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">shopping_bag</span>
+            Thông tin lô hàng
+          </h2>
+          <div class="flex flex-col sm:flex-row gap-6 pb-6 border-b border-slate-100">
+            <div
+              class="w-full sm:w-32 h-32 bg-slate-100 rounded-lg flex items-center justify-center border border-slate-200 shrink-0">
+              <span class="material-symbols-outlined text-5xl text-slate-300">recycling</span>
             </div>
-            <div class="relative">
-              <div class="absolute -top-12 -right-12 w-64 h-64 bg-secondary/20 rounded-full blur-3xl"></div>
-              <div class="absolute -bottom-12 -left-12 w-64 h-64 bg-primary/20 rounded-full blur-3xl"></div>
-              <div
-                class="relative rounded-3xl overflow-hidden aspect-video shadow-2xl border-4 border-white dark:border-slate-800">
-                <div class="w-full h-full bg-cover bg-center"
-                  data-alt="Modern recycling facility with advanced sorting technology"
-                  style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBYNyD1yogbF_jUPj7S80WomN6g-JyVJG1KU-HTlOECxmhBs__cJNI52RXQJelOxu9BDZl7nr5Sl1nUFR18UH9ZfZ-aCargusJkjVZmirkIIIYRbL7_UmnZw2Civ6uzOBZeZEa02EvLd_iMHOZL12kHedpl8xd8AbKmkdyN7ZM3GaJE8bTaALBS0KZBcWNPi5sfB221u9NJ_908R7l743LJmu22YS6KeIELMnce09M-hIuZTonqaGwKbuiY_tB6FE7aWnWvxhNVpZY')">
+            <div class="flex-1 space-y-3">
+              <div>
+                <h3 class="text-xl font-bold text-slate-900">Giấy carton hỗn hợp (OCC)</h3>
+                <p class="text-slate-500 text-sm">Mã lô: #BATCH-8821</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <span
+                  class="bg-blue-50 text-blue-700 text-xs px-2.5 py-1 rounded-full font-medium border border-blue-100">Độ
+                  ẩm &lt; 12%</span>
+                <span
+                  class="bg-green-50 text-green-700 text-xs px-2.5 py-1 rounded-full font-medium border border-green-100">Đã
+                  kiểm định</span>
+              </div>
+              <div class="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <span class="text-xs text-slate-500 uppercase font-semibold">Khối lượng</span>
+                  <p class="text-lg font-bold text-slate-800">5,000 kg</p>
+                </div>
+                <div>
+                  <span class="text-xs text-slate-500 uppercase font-semibold">Đơn giá cố định</span>
+                  <p class="text-lg font-bold text-primary">3,200 đ/kg</p>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-      <section
-        class="bg-white dark:bg-slate-900/50 py-24 px-6 lg:px-20 border-y border-slate-100 dark:border-slate-800">
-        <div class="max-w-7xl mx-auto">
-          <div class="text-center mb-16">
-            <h2 class="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white mb-4">Sứ mệnh của ReNats</h2>
-            <p class="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">Kiến tạo tương lai bền vững thông qua việc
-              số hóa và chuẩn hóa ngành công nghiệp tái chế.</p>
+          <div class="mt-4 flex justify-between items-center text-sm">
+            <span class="text-slate-500">Nhà cung cấp:</span>
+            <span class="font-semibold text-slate-900">Vựa phế liệu Minh Khôi</span>
           </div>
-          <div class="grid md:grid-cols-3 lg:grid-cols-5 gap-6">
-            <div
-              class="group p-8 rounded-2xl bg-background-light dark:bg-background-dark border border-slate-100 dark:border-slate-800 hover:border-primary/50 transition-all hover:shadow-xl">
-              <div
-                class="w-14 h-14 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-white transition-colors">
-                <span class="material-symbols-outlined text-3xl">assignment_turned_in</span>
-              </div>
-              <h3 class="font-bold text-lg mb-3 text-slate-900 dark:text-white">Chuẩn hóa quy trình</h3>
-              <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Chuẩn hóa quy trình thu mua phế liệu
-                chuyên nghiệp và hiệu quả.</p>
-            </div>
-            <div
-              class="group p-8 rounded-2xl bg-background-light dark:bg-background-dark border border-slate-100 dark:border-slate-800 hover:border-primary/50 transition-all hover:shadow-xl">
-              <div
-                class="w-14 h-14 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center mb-6 group-hover:bg-secondary group-hover:text-white transition-colors">
-                <span class="material-symbols-outlined text-3xl">payments</span>
-              </div>
-              <h3 class="font-bold text-lg mb-3 text-slate-900 dark:text-white">Minh bạch hóa</h3>
-              <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Công khai, minh bạch hóa giá cả và
-                mọi giao dịch trên nền tảng.</p>
-            </div>
-            <div
-              class="group p-8 rounded-2xl bg-background-light dark:bg-background-dark border border-slate-100 dark:border-slate-800 hover:border-primary/50 transition-all hover:shadow-xl">
-              <div
-                class="w-14 h-14 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-white transition-colors">
-                <span class="material-symbols-outlined text-3xl">developer_mode_tv</span>
-              </div>
-              <h3 class="font-bold text-lg mb-3 text-slate-900 dark:text-white">Số hóa quản lý</h3>
-              <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Số hóa toàn diện hoạt động quản lý
-                vựa theo xu hướng 4.0.</p>
-            </div>
-            <div
-              class="group p-8 rounded-2xl bg-background-light dark:bg-background-dark border border-slate-100 dark:border-slate-800 hover:border-primary/50 transition-all hover:shadow-xl">
-              <div
-                class="w-14 h-14 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center mb-6 group-hover:bg-secondary group-hover:text-white transition-colors">
-                <span class="material-symbols-outlined text-3xl">handshake</span>
-              </div>
-              <h3 class="font-bold text-lg mb-3 text-slate-900 dark:text-white">Kết nối nhanh</h3>
-              <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Kết nối nhanh chóng giữa người bán
-                và các đơn vị thu mua uy tín.</p>
-            </div>
-            <div
-              class="group p-8 rounded-2xl bg-background-light dark:bg-background-dark border border-slate-100 dark:border-slate-800 hover:border-primary/50 transition-all hover:shadow-xl">
-              <div
-                class="w-14 h-14 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-white transition-colors">
-                <span class="material-symbols-outlined text-3xl">eco</span>
-              </div>
-              <h3 class="font-bold text-lg mb-3 text-slate-900 dark:text-white">Kinh tế tuần hoàn</h3>
-              <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Thúc đẩy nền kinh tế tuần hoàn bền
-                vững cho thế hệ tương lai.</p>
-            </div>
+          <div class="mt-2 flex justify-between items-center text-sm">
+            <span class="text-slate-500">Địa chỉ kho:</span>
+            <span class="font-medium text-slate-700">123 QL1A, Bình Hưng Hòa, Bình Tân, TP.HCM</span>
           </div>
         </div>
-      </section>
-      <section class="py-24 px-6 lg:px-20 relative overflow-hidden">
-        <div class="max-w-5xl mx-auto text-center relative z-10">
-          <div class="inline-block mb-8">
-            <span class="material-symbols-outlined text-6xl text-primary/30">format_quote</span>
-          </div>
-          <h2 class="text-2xl lg:text-4xl font-semibold italic text-slate-800 dark:text-slate-100 leading-snug mb-12">
-            "Chúng tôi tin rằng công nghệ không chỉ tạo ra hiệu quả – mà còn tạo ra tác động tích cực cho môi trường và
-            xã hội."
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">photo_library</span>
+            Hình ảnh thực tế lô hàng
           </h2>
-          <div class="flex flex-col items-center">
-            <div class="w-16 h-1 bg-primary rounded-full mb-8"></div>
-            <button
-              class="bg-primary hover:bg-primary/90 text-white px-10 py-4 rounded-xl font-bold transition-all shadow-xl shadow-primary/20">
-              Hợp tác cùng chúng tôi
-            </button>
-          </div>
-        </div>
-        <div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-secondary/5 to-transparent"></div>
-        <div class="absolute bottom-0 left-0 w-1/3 h-full bg-gradient-to-r from-primary/5 to-transparent"></div>
-      </section>
-    </main>
-    <footer class="bg-slate-900 text-slate-300 py-16 px-6 lg:px-20 border-t border-slate-800">
-      <div class="max-w-7xl mx-auto">
-        <div class="grid md:grid-cols-4 gap-12">
-          <div class="col-span-2">
-            <div class="flex items-center gap-3 mb-6">
-              <img alt="ReNats Logo" class="h-10 w-auto object-contain" data-alt="Monochrome white ReNats logo"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcqDZPkzxobj_qP1oZRjqVmBE11FR4IaxMkT03UCZ2zkCRwsvFDSXB34agpCg9cJY0RycdFvXsG2yjkwDo6ah5HEjwyz7KkXYjzGkLn6gqzdFPxiCw-_BumiVMV-EsGbNLaXeou_CB93V0R6KxovwX_YAEjARmsSKnPeGM6DfvwGjHHagatxRuOalLEeRn8RI_gouD1ALqfAa2u2ZLgMlLSUSQv1uSCcmYyo6wlawZFQf1XLYSpmrmVEuBnu0QBjKZ9SK0xWb6Sfo" />
+          <div class="space-y-4">
+            <div
+              class="relative w-full aspect-video bg-slate-100 rounded-xl overflow-hidden border border-slate-200 group cursor-pointer">
+              <img alt="Recycled Paper Bales Large"
+                class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtQo_BXLTCb7oQmjrGu166gQf9vcKoMtG_l_vj0srHle8_RiRGoVAD3an26lfGqWsNUxx2K3CiVIqs8GCKXlorB5u380ylN_YH34MZDNqffezCHv2sS-2Bya07Wq6nlhdO_d68qoJG7YW53ctPoD-KT2AqZjmyiWNH1NWMqaM6P380hKnHvhyYTbSyFyBNCuZBSnuR_Xc0BH23J8N4zvVHs9SnSZ1HuNzTpmbB1QD-hRkkbwrflSXjqRYZser0-Jcdb-PIgDBoEcU" />
+              <div
+                class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                Xem chi tiết
+              </div>
             </div>
-            <p class="max-w-sm text-sm leading-relaxed mb-6">
-              Nền tảng công nghệ hàng đầu Việt Nam trong lĩnh vực quản lý và kết nối hệ sinh thái tái chế phế liệu.
-            </p>
-            <div class="flex gap-4">
-              <a class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-primary transition-colors"
-                href="#">
-                <span class="material-symbols-outlined text-sm">public</span>
-              </a>
-              <a class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-primary transition-colors"
-                href="#">
-                <span class="material-symbols-outlined text-sm">mail</span>
-              </a>
+            <div class="grid grid-cols-4 gap-3">
+              <button
+                class="relative aspect-square rounded-lg overflow-hidden border-2 border-primary ring-2 ring-primary/20 transition-all">
+                <img alt="Thumbnail 1" class="w-full h-full object-cover"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyNHjwbA_x11KFKbWeXiaIKCUPNFvo5l0HW-ruO6VAH4WUWfaouCL90HzNj5wXJzPKjZbIk5I7AEnI0I1Uje5DyDQ8Ic0wM3tWfb9K0x_0dGcyeyOUqDwsOg3AZx8pKjQEEALHRwcr8-L2nqFnXZQEyV3hv0tH8KGqrYEUBzFtFmxUtgztTxENzxQOOo5yc4zTvEHjcG8ocZKPCzj6JQTFOdUYjlBa3eS9ILQXEY7Oxyb-Aoe01ZmSO5Qv2SsYrhD-MoFk3bYyzfc" />
+              </button>
+              <button
+                class="relative aspect-square rounded-lg overflow-hidden border border-slate-200 hover:border-primary transition-all opacity-70 hover:opacity-100">
+                <img alt="Thumbnail 2" class="w-full h-full object-cover"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuB67j6yamWiaW1EljQYNXivw1_io8quPHaJbWDQFxIB1ahbFCluJ6CvF49a-w8KTWtS1e2KGeHAtVQ5YoTjKUXtgz5bHffbgc29YlWHf6ahcUFr_5GbBVO_u1rFeLEY4RmeG-ArGRAwcHg26_24gTzhdhJrxOLBD2M7zdJdngilDAHT2SssGeiSJ4va5uyuUzVwkK73P2LvSrb7PMd5RSsUYiklCKjEXwPSZxiQ2B6N3dbQGFWu6KThaaTXByDdIXAs5HejtR4eidI" />
+              </button>
+              <button
+                class="relative aspect-square rounded-lg overflow-hidden border border-slate-200 hover:border-primary transition-all opacity-70 hover:opacity-100">
+                <img alt="Thumbnail 3" class="w-full h-full object-cover"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHfjhsZWw-NXKpfil4Tjj64fiOxPZVRB4e7lLNSHAhU8jE4YZjSid6Ob8-Q3ft8xBDXDuIGhHgdoNBI_CYD0XIUE-YPCYOjnJgDbn4mX316Cy1FCqkiBAYXiVP7LHXRlKEuuUcYF3w1cpSAa-eFRkHhfRNT0euRiini5NIKwIlXrl6_VoGQSaZwvjZkMZW39PAYorZvOQop2IZ7VD8DNPiOT52FlF9vZzFLS320Wa8ExiEJ3BjOxtdC7NVu7McD9tUOXuHwH93DgI" />
+              </button>
+              <button
+                class="relative aspect-square rounded-lg overflow-hidden border border-slate-200 hover:border-primary transition-all opacity-70 hover:opacity-100 group">
+                <img alt="Thumbnail 4" class="w-full h-full object-cover"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_uSWgpatkzFf7WaMBbSSZ848alLsO8z9eEqfpYBb0XcLEUgapaATnmujzxgURkwfEQt-m74LKcyyWBaP7CKxWObHkyMhTfQiYHbfXL7SsSd2YdR8nY_RL_5NGv5uIxyu79-MpOMZ2LjOonC-qknpmU4fxAFbQPxYD6yWsDEE02XT-KSVHh3fQhe6wpC3SiJdI8WKLO0TYl3-zntOe4DavpU4uUwRBepsyPNnVamk_8eXJCsfTTF5aNwGPXBmwuFz1q86IZjrq-1U" />
+                <div
+                  class="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/20 transition-colors">
+                  <span class="text-white font-bold text-lg">+3</span>
+                </div>
+              </button>
             </div>
           </div>
-          <div>
-            <h4 class="text-white font-bold mb-6">Liên kết</h4>
-            <ul class="flex flex-col gap-4 text-sm">
-              <li><a class="hover:text-primary transition-colors" href="#">Về chúng tôi</a></li>
-              <li><a class="hover:text-primary transition-colors" href="#">Giải pháp</a></li>
-              <li><a class="hover:text-primary transition-colors" href="#">Tin tức</a></li>
-              <li><a class="hover:text-primary transition-colors" href="#">Liên hệ</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 class="text-white font-bold mb-6">Liên hệ</h4>
-            <ul class="flex flex-col gap-4 text-sm">
-              <li class="flex gap-3">
-                <span class="material-symbols-outlined text-primary text-sm">location_on</span>
-                <span>Thành phố Hồ Chí Minh, Việt Nam</span>
-              </li>
-              <li class="flex gap-3">
-                <span class="material-symbols-outlined text-primary text-sm">phone</span>
-                <span>+84 123 456 789</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div
-          class="border-t border-slate-800 mt-16 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs">
-          <p>© 2024 ReNats. All rights reserved.</p>
-          <div class="flex gap-6">
-            <a class="hover:text-white" href="#">Điều khoản sử dụng</a>
-            <a class="hover:text-white" href="#">Chính sách bảo mật</a>
+          <div class="mt-4 pt-4 border-t border-slate-100">
+            <div class="flex items-start gap-2">
+              <span class="material-symbols-outlined text-slate-400 mt-0.5 text-lg">verified</span>
+              <div>
+                <p class="text-sm font-medium text-slate-700">Hình ảnh được chụp xác thực tại kho</p>
+                <p class="text-xs text-slate-500 mt-0.5">Ngày chụp: 24/05/2024 - 09:30 AM</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </footer>
-  </div>
+      <div class="lg:col-span-1">
+        <div class="sticky top-24 space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-lg p-6">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">Tổng cộng ước tính</h3>
+            <div class="space-y-3 pb-6 border-b border-slate-100 mb-6">
+              <div class="flex justify-between text-sm">
+                <span class="text-slate-500">Giá trị hàng hóa</span>
+                <span class="font-medium text-slate-900">16,000,000 đ</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-slate-500">Phí vận chuyển</span>
+                <span class="font-medium text-slate-900">--</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-slate-500">Phí dịch vụ</span>
+                <span class="font-medium text-slate-900">Miễn phí</span>
+              </div>
+            </div>
+            <div class="flex justify-between items-baseline mb-8">
+              <span class="text-base font-bold text-slate-700">Thành tiền</span>
+              <span class="text-2xl font-bold text-primary">16,000,000 đ</span>
+            </div>
+            <button
+              class="w-full bg-primary hover:bg-secondary text-white py-4 px-6 rounded-xl font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group">
+              Xác nhận &amp; Gửi yêu cầu
+              <span
+                class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            </button>
+            <p class="text-xs text-slate-400 text-center mt-4">
+              Bằng việc xác nhận, bạn đồng ý với <a class="text-primary hover:underline" href="#">Điều khoản mua
+                hàng</a> của ReNats.
+            </p>
+          </div>
+          <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
+            <span class="material-symbols-outlined text-blue-600 shrink-0 mt-0.5">info</span>
+            <div>
+              <p class="text-sm font-semibold text-blue-800">Lưu ý quan trọng</p>
+              <p class="text-xs text-blue-700 mt-1">
+                Số lượng thực tế sẽ được xác nhận khi cân hàng tại trạm cân nhà máy. Thanh toán sẽ dựa trên khối lượng
+                thực tế.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
 </body>
 
 </html>
