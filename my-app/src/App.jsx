@@ -21,6 +21,10 @@ import MaterialsMarket from './features/recycling_businesses/materialsMarket';
 import PremiumMarket from './features/recycling_businesses/premiumMarket';
 import OrderProcess from './features/recycling_businesses/orderProcess';
 import OrderConfirm from './features/recycling_businesses/orderConfirm';
+import TransportationMarketplace from './features/transportation/marketplace';
+import TransportationOrderDetails from './features/transportation/orderDetails';
+import TransportationTripDetailsBooking from './features/transportation/tripDetailsBooking';
+import TransportationWaitingConfirm from './features/transportation/waitingConfirm';
 import StartOrder from './features/transportation/startOrder';
 import CheckinOrder from './features/transportation/checkinOrder';
 import CheckinOrderStep2 from './features/transportation/checkinOrderStep2';
@@ -60,6 +64,10 @@ function App() {
         <Route path="/recycle/order-confirm" element={<OrderConfirm />} />
 
         {/* Transportation */}
+        <Route path="/transport/market" element={<TransportationMarketplace />} />
+        <Route path="/transport/order-details" element={<TransportationOrderDetails />} />
+        <Route path="/transport/trip-booking" element={<TransportationTripDetailsBooking />} />
+        <Route path="/transport/waiting-confirm" element={<TransportationWaitingConfirm />} />
         <Route path="/van-chuyen/chuyen-xe" element={<StartOrder />} />
         <Route path="/van-chuyen/checkin" element={<CheckinOrder />} />
         <Route path="/van-chuyen/di-chuyen" element={<CheckinOrderStep2 />} />
