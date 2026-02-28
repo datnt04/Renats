@@ -9,6 +9,13 @@ import WarehouseDashboard from './features/warehouse/WarehouseDashboard';
 import CreateBatchOrder from './features/warehouse/CreateBatchOrder';
 import PickupRequestDetail from './features/warehouse/PickupRequestDetail';
 import Invoice from './features/shared/Invoice';
+import Dashboard from './features/recycling_businesses/dashboard';
+import MapVip from './features/recycling_businesses/mapVip';
+import BuyPremium from './features/recycling_businesses/buyPremium';
+import PartnerListLock from './features/recycling_businesses/partnerListLock';
+import EprReport from './features/recycling_businesses/eprReport';
+import EprInforOrder from './features/recycling_businesses/eprInforOrder';
+import InforPartnerVip from './features/recycling_businesses/InforPartnerVip';
 import DashboardRecycle from './features/recycling_businesses/dashboardRecycle';
 import MaterialsMarket from './features/recycling_businesses/materialsMarket';
 import PremiumMarket from './features/recycling_businesses/premiumMarket';
@@ -35,6 +42,14 @@ function App() {
         <Route path="/kho/yeu-cau/:id" element={<PickupRequestDetail />} />
 
         {/* Recycling Businesses */}
+        <Route path="/nha-may/dashboard" element={<Dashboard />} />
+        <Route path="/nha-may/map" element={<MapVip />} />
+        <Route path="/nha-may/premium" element={<BuyPremium />} />
+        <Route path="/nha-may/doi-tac" element={<PartnerListLock isPremium={false} />} />
+        <Route path="/nha-may/doi-tac-vip" element={<PartnerListLock isPremium={true} />} />
+        <Route path="/nha-may/bao-cao-epr" element={<EprReport />} />
+        <Route path="/nha-may/bao-cao-epr/:id" element={<EprInforOrder />} />
+        <Route path="/nha-may/doi-tac/:id" element={<InforPartnerVip />} />
         <Route path="/recycle/dashboard" element={<DashboardRecycle />} />
         <Route path="/recycle/market" element={<MaterialsMarket />} />
         <Route path="/recycle/market-premium" element={<PremiumMarket />} />
