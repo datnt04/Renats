@@ -82,8 +82,24 @@ const StepBar = ({ current }) => (
 );
 
 // ── Step 1: Thông tin lô ──────────────────────────────────────────────────
-const Step1 = ({ form, setForm }) => {
+const Step1 = ({ form, setForm, photos, setPhotos }) => {
     const set = f => e => setForm(p => ({ ...p, [f]: e.target.value }));
+
+    // Image upload handlers
+    const handleFiles = files => {
+        const valid = Array.from(files).filter(f => f.type.startsWith('image/'));
+        const readers = valid.map(file => new Promise(res => {
+            const r = new FileReader();
+            r.onload = e => res({ name: file.name, src: e.target.result });
+            r.readAsDataURL(file);
+        }));
+        Promise.all(readers).then(newImgs =>
+            setPhotos(prev => [...prev, ...newImgs].slice(0, 6))
+        );
+    };
+    const removePhoto = idx => setPhotos(prev => prev.filter((_, i) => i !== idx));
+    const onDrop = e => { e.preventDefault(); handleFiles(e.dataTransfer.files); };
+
     return (
         <div className="space-y-5">
             {/* Loại phế liệu */}
@@ -136,6 +152,61 @@ const Step1 = ({ form, setForm }) => {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Ghi chú chất lượng</label>
                 <textarea rows={2} placeholder="Chất lượng lô hàng, tình trạng phân loại, ghi chú đặc biệt..." value={form.note} onChange={set('note')}
                     className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600 resize-none" />
+            </div>
+
+            {/* Ảnh chụp lô hàng */}
+            <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Ảnh chụp lô hàng
+                    <span className="ml-1 text-slate-400 font-normal normal-case">(tối đa 6 ảnh)</span>
+                </label>
+
+                {/* Drop zone */}
+                <div
+                    onDrop={onDrop}
+                    onDragOver={e => e.preventDefault()}
+                    onClick={() => document.getElementById('batch-photo-input').click()}
+                    className="border-2 border-dashed border-slate-300 hover:border-green-500 rounded-xl px-4 py-6 flex flex-col items-center gap-2 cursor-pointer transition-colors group"
+                >
+                    <div className="w-12 h-12 rounded-full bg-slate-100 group-hover:bg-green-50 flex items-center justify-center transition-colors">
+                        <svg className="w-6 h-6 text-slate-400 group-hover:text-green-600 transition-colors" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                        </svg>
+                    </div>
+                    <p className="text-sm text-slate-500 group-hover:text-green-700 font-medium transition-colors">Kéo thả ảnh vào đây hoặc <span className="text-green-600 font-bold underline">chọn từ thiết bị</span></p>
+                    <p className="text-xs text-slate-400">JPG, PNG, HEIC — mỗi ảnh tối đa 10 MB</p>
+                </div>
+                <input id="batch-photo-input" type="file" accept="image/*" multiple className="hidden"
+                    onChange={e => handleFiles(e.target.files)} />
+
+                {/* Previews */}
+                {photos.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2 mt-3">
+                        {photos.map((img, idx) => (
+                            <div key={idx} className="relative group rounded-xl overflow-hidden border border-slate-200 aspect-square">
+                                <img src={img.src} alt={img.name} className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <button onClick={e => { e.stopPropagation(); removePhoto(idx); }}
+                                        className="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <span className="absolute bottom-1 left-1 text-[10px] bg-black/50 text-white px-1.5 py-0.5 rounded-md truncate max-w-[80%]">{img.name}</span>
+                            </div>
+                        ))}
+                        {photos.length < 6 && (
+                            <button onClick={() => document.getElementById('batch-photo-input').click()}
+                                className="aspect-square rounded-xl border-2 border-dashed border-slate-300 hover:border-green-500 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-green-600 transition-colors">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                                <span className="text-xs font-medium">Thêm ảnh</span>
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
 
             <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
@@ -425,6 +496,7 @@ const CreateBatchOrder = () => {
         location: '45 Đường Số 12, Bình Chánh, TP. Hồ Chí Minh',
         note: '', carrierId: '', buyer: '', deliveryDate: '',
     });
+    const [photos, setPhotos] = useState([]);
 
     const totalRatio = Object.values(sourceRatio).reduce((s, v) => s + (parseFloat(v) || 0), 0);
 
@@ -472,7 +544,7 @@ const CreateBatchOrder = () => {
 
                 {/* Step content */}
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                    {step === 0 && <Step1 form={form} setForm={setForm} />}
+                    {step === 0 && <Step1 form={form} setForm={setForm} photos={photos} setPhotos={setPhotos} />}
                     {step === 1 && <Step2 sourceRatio={sourceRatio} setSourceRatio={setSourceRatio} form={form} />}
                     {step === 2 && <Step3 form={form} setForm={setForm} />}
                     {step === 3 && <Step4 form={form} setForm={setForm} sourceRatio={sourceRatio} />}
