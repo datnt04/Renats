@@ -107,7 +107,7 @@ const BuyPremium = () => {
                                     </li>
                                 </ul>
                             </div>
-                            <button className="w-full bg-slate-50 hover:bg-slate-100 text-primary border border-primary font-bold py-3 px-6 rounded-xl transition-colors">
+                            <button onClick={handleBuy} className="w-full bg-slate-50 hover:bg-slate-100 text-primary border border-primary font-bold py-3 px-6 rounded-xl transition-colors">
                                 Chọn gói 1 Tuần
                             </button>
                         </div>
@@ -176,7 +176,7 @@ const BuyPremium = () => {
                                     </li>
                                 </ul>
                             </div>
-                            <button className="w-full bg-slate-50 hover:bg-slate-100 text-primary border border-primary font-bold py-3 px-6 rounded-xl transition-colors">
+                            <button onClick={handleBuy} className="w-full bg-slate-50 hover:bg-slate-100 text-primary border border-primary font-bold py-3 px-6 rounded-xl transition-colors">
                                 Chọn gói 1 Tháng
                             </button>
                         </div>

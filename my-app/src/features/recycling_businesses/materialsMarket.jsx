@@ -1,41 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import HeaderDoanhNghiep from '../../components/layout/header_doanhNghiep/headerDoanhNghiep';
 
 const MaterialsMarket = () => {
     return (
         <div className="font-sans text-slate-900 overflow-x-hidden bg-slate-50 min-h-screen flex flex-col">
-            {/* ── HEADER ── */}
-            <header className="sticky-header">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-20">
-                        <div className="flex-shrink-0">
-                            <Link to="/recycle/dashboard">
-                                <img alt="Re-Nats Logo" className="w-auto h-20"
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3gKW9baWRyRxkJV31x5a-0U1sa7PGamZYDR1jsTogNaAy5vqcAdEicqsbmHHL5pS1iZotZGWRWdEujhed7u1bNsLSwaISs4E8U-ItVKt3SDI36p7jhJh8TB_3UEB8kfQDhgxnFNcAvshouOxS0Ee76qbk1Vr_Fkb998yVyNQPEeJhZWgyo7aTfVp2lCCfuhWdr8VCSmpE5mUz8lpwy1lmj82t9fffrwkwRfCTa8NQCY9njI9gaFLeAgxulAkWsldCaYyjtuXRmDw" />
-                            </Link>
-                        </div>
-                        <nav className="hidden md:flex space-x-8">
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" href="#">Chợ Nguyên
-                                Liệu</a>
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" href="#">Danh Sách
-                                Vựa</a>
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" href="#">Báo Giá</a>
-                        </nav>
-                        <div className="flex items-center space-x-4">
-                            <button className="p-2 text-slate-500 hover:text-primary relative">
-                                <span className="material-symbols-outlined">notifications</span>
-                                <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border border-white"></span>
-                            </button>
-                            <div className="h-8 w-px bg-slate-200"></div>
-                            <div className="flex items-center gap-2 cursor-pointer">
-                                <div className="h-9 w-9 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold">NT
-                                </div>
-                                <span className="text-sm font-semibold text-slate-700 hidden sm:block">Nhà máy Tái Chế A</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {/* Header dùng chung */}
+            <HeaderDoanhNghiep activeTab="market" />
 
             {/* ── MAIN CONTENT ── */}
             <section className="py-10 flex-grow">
@@ -74,10 +45,11 @@ const MaterialsMarket = () => {
                                 className="px-4 py-2 bg-white text-slate-800 rounded-md shadow-sm text-sm font-bold flex items-center gap-2">
                                 <span className="material-symbols-outlined text-lg">grid_view</span> Danh sách
                             </button>
-                            <button
-                                className="px-4 py-2 text-slate-500 hover:text-slate-800 rounded-md text-sm font-medium flex items-center gap-2 transition-colors">
+                            <Link
+                                to="/nha-may/map"
+                                className="px-3 py-1.5 text-slate-500 hover:text-slate-800 rounded-md text-sm font-medium flex items-center gap-2 transition-colors">
                                 <span className="material-symbols-outlined text-lg">map</span> Bản đồ
-                            </button>
+                            </Link>
                         </div>
                     </div>
 
@@ -142,7 +114,7 @@ const MaterialsMarket = () => {
                             </div>
                             <div className="p-4 border-t border-slate-100 bg-white z-20">
                                 <Link
-                                    to="/recycle/order-process"
+                                    to="/recycle/order-confirm"
                                     className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
                                     <span className="material-symbols-outlined">shopping_cart_checkout</span>
                                     Chốt đơn / Đặt mua
@@ -206,7 +178,7 @@ const MaterialsMarket = () => {
                             </div>
                             <div className="p-4 border-t border-slate-100 bg-white z-20">
                                 <Link
-                                    to="/recycle/order-process"
+                                    to="/recycle/order-confirm"
                                     className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
                                     <span className="material-symbols-outlined">shopping_cart_checkout</span>
                                     Chốt đơn / Đặt mua
@@ -270,7 +242,7 @@ const MaterialsMarket = () => {
                             </div>
                             <div className="p-4 border-t border-slate-100 bg-white z-20">
                                 <Link
-                                    to="/recycle/order-process"
+                                    to="/recycle/order-confirm"
                                     className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
                                     <span className="material-symbols-outlined">shopping_cart_checkout</span>
                                     Chốt đơn / Đặt mua
@@ -339,7 +311,7 @@ const MaterialsMarket = () => {
                             </div>
                             <div className="p-4 border-t border-slate-100 bg-white z-20">
                                 <Link
-                                    to="/recycle/order-process"
+                                    to="/recycle/order-confirm"
                                     className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
                                     <span className="material-symbols-outlined">shopping_cart_checkout</span>
                                     Chốt đơn / Đặt mua
@@ -408,7 +380,7 @@ const MaterialsMarket = () => {
                             </div>
                             <div className="p-4 border-t border-slate-100 bg-white z-20">
                                 <Link
-                                    to="/recycle/order-process"
+                                    to="/recycle/order-confirm"
                                     className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
                                     <span className="material-symbols-outlined">shopping_cart_checkout</span>
                                     Chốt đơn / Đặt mua
@@ -477,7 +449,7 @@ const MaterialsMarket = () => {
                             </div>
                             <div className="p-4 border-t border-slate-100 bg-white z-20">
                                 <Link
-                                    to="/recycle/order-process"
+                                    to="/recycle/order-confirm"
                                     className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
                                     <span className="material-symbols-outlined">shopping_cart_checkout</span>
                                     Chốt đơn / Đặt mua

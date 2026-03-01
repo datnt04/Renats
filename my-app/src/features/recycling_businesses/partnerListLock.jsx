@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import HeaderDoanhNghiep from '../../components/layout/header_doanhNghiep/headerDoanhNghiep';
 
 // isPremium={true}  → Hiển thị bảng đầy đủ (đã mua Premium)
 // isPremium={false} → Bảng bị blur + overlay kêu gọi mua Premium
@@ -8,15 +9,6 @@ const PartnerList = ({ isPremium = false }) => {
     return (
         <div className="font-sans text-slate-900 overflow-x-hidden bg-slate-50 min-h-screen">
             <style>{`
-        .sticky-header {
-          position: sticky;
-          top: 0;
-          z-index: 50;
-          backdrop-filter: blur(8px);
-          background-color: rgba(255, 255, 255, 0.9);
-          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
         .locked-blur {
           filter: blur(6px);
           user-select: none;
@@ -24,48 +16,8 @@ const PartnerList = ({ isPremium = false }) => {
         }
       `}</style>
 
-            {/* Header */}
-            <header className="sticky-header">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-20">
-                        <div className="flex-shrink-0">
-                            <img
-                                alt="Re-Nats Logo"
-                                className="w-auto h-20 block"
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPyNaZZPNIUwLzLK8rj79_kxgvsvN-3VOzkMfVbMB5K07A7CFYXbzLmZP-Ur0mJVBQMokrEuaiShXmaLuOJKhOsZ5q_tLSsx6Y6TRZJkUcUNwRPnIjMCtjhz8iZQ3xhKit1kegMFDIFx6cHSkrUWlYN32F3pz3g45C1GSNrE0wx_uV7raUzGcwWTsu65SzMOp5z63m12cShw7G3MuB64K8HpLtIz1srLWmsNBGLuOQzmgm5D_FVnqB7_DskDJc6jQsXe0MBDRrpzo"
-                            />
-                        </div>
-                        <nav className="hidden md:flex space-x-8">
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" href="#">Chợ Nguyên Liệu</a>
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" href="#">Danh Sách Vựa</a>
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" href="#">Báo Giá</a>
-                        </nav>
-                        <div className="flex items-center space-x-4">
-                            {isPremium ? (
-                                /* Header khi đã có Premium */
-                                <div className="flex items-center gap-2 mr-2">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                        VIP Member
-                                    </span>
-                                    <img
-                                        alt="User"
-                                        className="h-8 w-8 rounded-full"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCphibhLLieQqFnkOI-mFwzVQiIZdpjdhghOP7flgjx_fcbObKrw29YolHLM2IoKCvetO9Rf0EXTTGSmJMMS_uR5qhMmoowWUZGf2aENAlWXxvtGoHZs22w5iqkDzaduqwe4_M5iApxzUxMrPt_do-eY4xGML6nJcHlcGflSx5cUczRnqUJCRaDm0bcJOZhZWoc-4ovxJYrfCPq1j-ZrA8j-EPUU0rs1SmeIxzxlHWmFjChKDZmhFnwN6e25DS8Q4EyBXSwZun6p0k"
-                                    />
-                                </div>
-                            ) : (
-                                /* Header khi chưa có Premium */
-                                <>
-                                    <a className="text-sm font-semibold text-slate-700 hover:text-primary" href="#">Đăng nhập</a>
-                                    <a className="bg-primary hover:bg-secondary text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-md shadow-green-200" href="#">
-                                        Đăng ký ngay
-                                    </a>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {/* Header dùng chung */}
+            <HeaderDoanhNghiep activeTab="partners" />
 
             {/* Main Section */}
             <section className="relative py-12 pb-24">
@@ -157,7 +109,9 @@ const PartnerList = ({ isPremium = false }) => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a className="text-primary hover:text-secondary bg-green-50 hover:bg-green-100 px-4 py-2 rounded-lg transition-colors" href="#">Xem chi tiết</a>
+                                            <button
+                                                onClick={() => navigate('/nha-may/doi-tac/' + (i + 1))}
+                                                className="text-primary hover:text-secondary bg-green-50 hover:bg-green-100 px-4 py-2 rounded-lg transition-colors">Xem chi tiết</button>
                                         </td>
                                     </tr>
                                 ))}
