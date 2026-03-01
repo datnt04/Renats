@@ -9,7 +9,6 @@ import WarehouseDashboard from './features/warehouse/WarehouseDashboard';
 import CreateBatchOrder from './features/warehouse/CreateBatchOrder';
 import PickupRequestDetail from './features/warehouse/PickupRequestDetail';
 import Invoice from './features/shared/Invoice';
-import Dashboard from './features/recycling_businesses/dashboard';
 import MapVip from './features/recycling_businesses/mapVip';
 import BuyPremium from './features/recycling_businesses/buyPremium';
 import PartnerListLock from './features/recycling_businesses/partnerListLock';
@@ -49,7 +48,6 @@ function App() {
         <Route path="/kho/yeu-cau/:id" element={<PickupRequestDetail />} />
 
         {/* Recycling Businesses */}
-        <Route path="/nha-may/dashboard" element={<Dashboard />} />
         <Route path="/nha-may/map" element={<MapVip />} />
         <Route path="/nha-may/premium" element={<BuyPremium />} />
         <Route path="/nha-may/doi-tac" element={<PartnerListLock isPremium={false} />} />

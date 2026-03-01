@@ -1,6 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const EprReport = () => {
+    const navigate = useNavigate();
     return (
         <div className="font-sans text-slate-900 overflow-x-hidden bg-slate-50">
             <style>{`
@@ -194,7 +196,9 @@ const EprReport = () => {
                                 </thead>
                                 <tbody className="bg-white divide-y divide-slate-200">
                                     {/* Row 1 */}
-                                    <tr className="hover:bg-slate-50 transition-colors">
+                                    <tr
+                                        className="hover:bg-primary/5 transition-colors cursor-pointer"
+                                        onClick={() => navigate('/nha-may/bao-cao-epr/88210')}>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-bold text-primary">#TXN-88210</div>
                                         </td>
@@ -223,7 +227,9 @@ const EprReport = () => {
                                         </td>
                                     </tr>
                                     {/* Row 2 */}
-                                    <tr className="hover:bg-slate-50 transition-colors">
+                                    <tr
+                                        className="hover:bg-primary/5 transition-colors cursor-pointer"
+                                        onClick={() => navigate('/nha-may/bao-cao-epr/88209')}>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-bold text-primary">#TXN-88209</div>
                                         </td>
@@ -252,7 +258,9 @@ const EprReport = () => {
                                         </td>
                                     </tr>
                                     {/* Row 3 */}
-                                    <tr className="hover:bg-slate-50 transition-colors">
+                                    <tr
+                                        className="hover:bg-primary/5 transition-colors cursor-pointer"
+                                        onClick={() => navigate('/nha-may/bao-cao-epr/88208')}>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-bold text-primary">#TXN-88208</div>
                                         </td>
@@ -281,7 +289,9 @@ const EprReport = () => {
                                         </td>
                                     </tr>
                                     {/* Row 4 */}
-                                    <tr className="hover:bg-slate-50 transition-colors">
+                                    <tr
+                                        className="hover:bg-primary/5 transition-colors cursor-pointer"
+                                        onClick={() => navigate('/nha-may/bao-cao-epr/88207')}>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-bold text-primary">#TXN-88207</div>
                                         </td>
@@ -310,7 +320,9 @@ const EprReport = () => {
                                         </td>
                                     </tr>
                                     {/* Row 5 */}
-                                    <tr className="hover:bg-slate-50 transition-colors">
+                                    <tr
+                                        className="hover:bg-primary/5 transition-colors cursor-pointer"
+                                        onClick={() => navigate('/nha-may/bao-cao-epr/88206')}>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="text-sm font-bold text-primary">#TXN-88206</div>
                                         </td>

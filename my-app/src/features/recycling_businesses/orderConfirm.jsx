@@ -171,7 +171,7 @@ const OrderConfirm = () => {
                                     <span className="text-2xl font-bold text-primary">16,000,000 đ</span>
                                 </div>
                                 <Link
-                                    to="/recycle/dashboard"
+                                    to="/recycle/order-process"
                                     className="w-full bg-primary hover:bg-secondary text-white py-4 px-6 rounded-xl font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group">
                                     Xác nhận &amp; Gửi yêu cầu
                                     <span

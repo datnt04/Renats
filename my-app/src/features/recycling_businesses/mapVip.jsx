@@ -1,18 +1,9 @@
 import React from 'react';
-
+import HeaderDoanhNghiep from '../../components/layout/header_doanhNghiep/headerDoanhNghiep';
 const MapVip = () => {
     return (
         <div className="font-sans text-slate-900 overflow-hidden bg-slate-50">
             <style>{`
-        .sticky-header {
-          position: sticky;
-          top: 0;
-          z-index: 50;
-          backdrop-filter: blur(8px);
-          background-color: rgba(255, 255, 255, 0.9);
-          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
         .map-container {
           background-color: #e5e7eb;
           background-size: cover;
@@ -61,44 +52,8 @@ const MapVip = () => {
         }
       `}</style>
 
-            {/* Header */}
-            <header className="sticky-header h-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-                    <div className="flex justify-between items-center h-full">
-                        <div className="flex-shrink-0">
-                            <img
-                                alt="Re-Nats Logo"
-                                className="w-auto h-16"
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3gKW9baWRyRxkJV31x5a-0U1sa7PGamZYDR1jsTogNaAy5vqcAdEicqsbmHHL5pS1iZotZGWRWdEujhed7u1bNsLSwaISs4E8U-ItVKt3SDI36p7jhJh8TB_3UEB8kfQDhgxnFNcAvshouOxS0Ee76qbk1Vr_Fkb998yVyNQPEeJhZWgyo7aTfVp2lCCfuhWdr8VCSmpE5mUz8lpwy1lmj82t9fffrwkwRfCTa8NQCY9njI9gaFLeAgxulAkWsldCaYyjtuXRmDw"
-                            />
-                        </div>
-                        <nav className="hidden md:flex space-x-8">
-                            <a className="text-sm font-semibold text-primary transition-colors border-b-2 border-primary pb-1" href="#">
-                                Chợ Nguyên Liệu
-                            </a>
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" href="#">
-                                Danh Sách Vựa
-                            </a>
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" href="#">
-                                Báo Giá
-                            </a>
-                        </nav>
-                        <div className="flex items-center space-x-4">
-                            <button className="p-2 text-slate-500 hover:text-primary relative">
-                                <span className="material-symbols-outlined">notifications</span>
-                                <span className="absolute top-1 right-1 h-2.5 w-2.5 bg-red-500 rounded-full border border-white"></span>
-                            </button>
-                            <div className="h-8 w-px bg-slate-200"></div>
-                            <div className="flex items-center gap-2 cursor-pointer">
-                                <div className="h-9 w-9 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold">
-                                    NT
-                                </div>
-                                <span className="text-sm font-semibold text-slate-700 hidden sm:block">Nhà máy Tái Chế A</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {/* Header dùng chung */}
+            <HeaderDoanhNghiep activeTab="map" />
 
             {/* Main */}
             <main className="relative w-full h-[calc(100vh-80px)]">
