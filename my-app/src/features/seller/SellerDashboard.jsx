@@ -263,12 +263,6 @@ const SellerDashboard = () => {
             <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
                 {/* Greeting + CTA */}
                 <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <h1 className="text-xl font-extrabold text-slate-900">Xin chào, Văn A 👋</h1>
-                        <p className="text-sm text-slate-400 mt-0.5">
-                            Có <span className="text-violet-600 font-semibold">1 yêu cầu đã cân xong</span> — xem kết quả ngay
-                        </p>
-                    </div>
                     <Link to="/seller/dang-tin"
                         className="flex items-center gap-1.5 bg-green-700 hover:bg-green-800 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md shadow-green-200 transition-all hover:scale-[1.02] whitespace-nowrap flex-shrink-0">
                         <IconPlus /> Đăng bán
