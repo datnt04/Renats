@@ -35,7 +35,13 @@ builder.Services.AddScoped<IPickupRequestService, PickupRequestService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
-        policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
+    {
+        policy.WithOrigins(
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000"
+              )
               .AllowAnyHeader()
               .AllowAnyMethod());
 });
@@ -49,15 +55,13 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// ── Auto-migrate + Seed ───────────────────────────────────────────────────────
+// ── Seed database (tạo tài khoản admin nếu chưa có) ──
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync();   // apply pending migrations
-    await DataSeeder.SeedAsync(db);     // seed test data
+    await DbSeeder.SeedAsync(db);
 }
 
-// ── Middleware ────────────────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

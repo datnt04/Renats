@@ -13,7 +13,8 @@ CREATE TYPE user_role AS ENUM (
     'ADMIN',
     'DEPOT',
     'FACTORY',
-    'DRIVER'
+    'DRIVER',
+    'SELLER'
 );
 
 CREATE TYPE batch_status AS ENUM (
