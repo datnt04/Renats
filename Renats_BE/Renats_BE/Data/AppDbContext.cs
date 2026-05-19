@@ -33,17 +33,8 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // ── Enum conversions: map C# enum → PostgreSQL native enum type ──
-        modelBuilder.HasPostgresEnum<UserRole>("user_role");
-        modelBuilder.HasPostgresEnum<MaterialType>("material_type");
-        modelBuilder.HasPostgresEnum<BatchStatus>("batch_status");
-        modelBuilder.HasPostgresEnum<TransportType>("transport_type");
-        modelBuilder.HasPostgresEnum<BidStatus>("bid_status");
-        modelBuilder.HasPostgresEnum<TransportStatus>("transport_status");
-        modelBuilder.HasPostgresEnum<InvoiceStatus>("invoice_status");
-
-        // PickupRequestStatus is a NEW table → stored as text (no native PG enum)
-        // (already configured in entity config block below)
+        // NOTE: DB columns are TEXT (converted via fix_enum_to_text.sql)
+        // EF Core dùng HasConversion<string>() để map C# enum ↔ TEXT
 
         // ── Table names (snake_case to match SQL) ──
         modelBuilder.Entity<User>().ToTable("users");
@@ -73,7 +64,7 @@ public class AppDbContext : DbContext
             e.Property(u => u.Email).HasColumnName("email").HasMaxLength(255);
             e.HasIndex(u => u.Email).IsUnique();
             e.Property(u => u.PasswordHash).HasColumnName("password_hash");
-            e.Property(u => u.Role).HasColumnName("role").HasColumnType("user_role");
+            e.Property(u => u.Role).HasColumnName("role").HasConversion<string>();
             e.Property(u => u.FullName).HasColumnName("full_name").HasMaxLength(255);
             e.Property(u => u.Phone).HasColumnName("phone").HasMaxLength(20);
             e.Property(u => u.IsActive).HasColumnName("is_active");
@@ -219,7 +210,7 @@ public class AppDbContext : DbContext
             e.Property(b => b.DepotId).HasColumnName("depot_id");
             e.Property(b => b.BatchCode).HasColumnName("batch_code").HasMaxLength(100);
             e.HasIndex(b => b.BatchCode).IsUnique();
-            e.Property(b => b.MaterialType).HasColumnName("material_type").HasColumnType("material_type");
+            e.Property(b => b.MaterialType).HasColumnName("material_type").HasConversion<string>();
             e.Property(b => b.EstimatedWeightKg).HasColumnName("estimated_weight_kg").HasPrecision(14, 2);
             e.Property(b => b.ActualWeightKg).HasColumnName("actual_weight_kg").HasPrecision(14, 2);
             e.Property(b => b.MoisturePercentage).HasColumnName("moisture_percentage").HasPrecision(5, 2);
@@ -227,8 +218,8 @@ public class AppDbContext : DbContext
             e.Property(b => b.UnitPrice).HasColumnName("unit_price").HasPrecision(14, 2);
             e.Property(b => b.Description).HasColumnName("description");
             e.Property(b => b.ThumbnailImageUrl).HasColumnName("thumbnail_image_url");
-            e.Property(b => b.Status).HasColumnName("status").HasColumnType("batch_status");
-            e.Property(b => b.TransportType).HasColumnName("transport_type").HasColumnType("transport_type");
+            e.Property(b => b.Status).HasColumnName("status").HasConversion<string>();
+            e.Property(b => b.TransportType).HasColumnName("transport_type").HasConversion<string>();
             e.Property(b => b.ListedAt).HasColumnName("listed_at");
             e.Property(b => b.AcceptedAt).HasColumnName("accepted_at");
             e.Property(b => b.DeliveredAt).HasColumnName("delivered_at");
@@ -254,7 +245,7 @@ public class AppDbContext : DbContext
             e.Property(b => b.FactoryId).HasColumnName("factory_id");
             e.Property(b => b.BidPrice).HasColumnName("bid_price").HasPrecision(14, 2);
             e.Property(b => b.Note).HasColumnName("note");
-            e.Property(b => b.Status).HasColumnName("status").HasColumnType("bid_status");
+            e.Property(b => b.Status).HasColumnName("status").HasConversion<string>();
             e.Property(b => b.CreatedAt).HasColumnName("created_at");
             e.HasOne(b => b.Batch).WithMany(ib => ib.Bids).HasForeignKey(b => b.BatchId);
             e.HasOne(b => b.Factory).WithMany(f => f.Bids).HasForeignKey(b => b.FactoryId);
@@ -268,7 +259,7 @@ public class AppDbContext : DbContext
             e.Property(o => o.AcceptedBidId).HasColumnName("accepted_bid_id");
             e.Property(o => o.AgreedPrice).HasColumnName("agreed_price").HasPrecision(14, 2);
             e.Property(o => o.TotalAmount).HasColumnName("total_amount").HasPrecision(14, 2);
-            e.Property(o => o.Status).HasColumnName("status").HasColumnType("batch_status");
+            e.Property(o => o.Status).HasColumnName("status").HasConversion<string>();
             e.Property(o => o.CreatedAt).HasColumnName("created_at");
             e.HasOne(o => o.Batch).WithOne(b => b.Order).HasForeignKey<BatchOrder>(o => o.BatchId);
             e.HasOne(o => o.Factory).WithMany(f => f.Orders).HasForeignKey(o => o.FactoryId);
@@ -288,7 +279,7 @@ public class AppDbContext : DbContext
             e.Property(t => t.DeliveryLongitude).HasColumnName("delivery_longitude").HasPrecision(10, 7);
             e.Property(t => t.EstimatedDistanceKm).HasColumnName("estimated_distance_km").HasPrecision(10, 2);
             e.Property(t => t.TransportFee).HasColumnName("transport_fee").HasPrecision(14, 2);
-            e.Property(t => t.Status).HasColumnName("status").HasColumnType("transport_status");
+            e.Property(t => t.Status).HasColumnName("status").HasConversion<string>();
             e.Property(t => t.PickupTime).HasColumnName("pickup_time");
             e.Property(t => t.DeliveredTime).HasColumnName("delivered_time");
             e.Property(t => t.CreatedAt).HasColumnName("created_at");
@@ -346,7 +337,7 @@ public class AppDbContext : DbContext
             e.Property(i => i.Subtotal).HasColumnName("subtotal").HasPrecision(14, 2);
             e.Property(i => i.VatAmount).HasColumnName("vat_amount").HasPrecision(14, 2);
             e.Property(i => i.TotalAmount).HasColumnName("total_amount").HasPrecision(14, 2);
-            e.Property(i => i.Status).HasColumnName("status").HasColumnType("invoice_status");
+            e.Property(i => i.Status).HasColumnName("status").HasConversion<string>();
             e.Property(i => i.UploadedBy).HasColumnName("uploaded_by");
             e.Property(i => i.CreatedAt).HasColumnName("created_at");
             e.HasOne(i => i.BatchOrder).WithOne(o => o.Invoice).HasForeignKey<Invoice>(i => i.BatchOrderId);
