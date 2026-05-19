@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using Renats_BE.Data;
-using Renats_BE.Models.Enums;
 using Renats_BE.Repositories;
 using Renats_BE.Repositories.Interfaces;
 using Renats_BE.Services;
@@ -10,21 +8,10 @@ using Renats_BE.Services.Interfaces;
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Database ──────────────────────────────────────────────────────────────────
-var dataSourceBuilder = new NpgsqlDataSourceBuilder(
-    builder.Configuration.GetConnectionString("DefaultConnection"));
-
-dataSourceBuilder.MapEnum<UserRole>("user_role");
-dataSourceBuilder.MapEnum<MaterialType>("material_type");
-dataSourceBuilder.MapEnum<BatchStatus>("batch_status");
-dataSourceBuilder.MapEnum<TransportType>("transport_type");
-dataSourceBuilder.MapEnum<BidStatus>("bid_status");
-dataSourceBuilder.MapEnum<TransportStatus>("transport_status");
-dataSourceBuilder.MapEnum<InvoiceStatus>("invoice_status");
-
-var dataSource = dataSourceBuilder.Build();
-
+// NOTE: Các cột enum đã được chuyển sang TEXT (fix_enum_to_text.sql)
+// → KHÔNG dùng MapEnum, EF Core dùng HasConversion<string>() để xử lý
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(dataSource));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // ── Repositories ──────────────────────────────────────────────────────────────
 builder.Services.AddScoped<ISellerRepository, SellerRepository>();
