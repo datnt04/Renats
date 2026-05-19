@@ -1,46 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AvatarDropdown } from '../../components/seller/AvatarDropdown';
+import { sellerService } from '../../services/sellerService';
 
-// ── Mock data ──────────────────────────────────────────────────────────────
 const WAREHOUSE = 'Kho Re-Nats';
-
-const mockRequests = [
-    {
-        id: 'YC-001',
-        types: [{ label: 'Đồng cáp', emoji: '🔶' }, { label: 'Sắt vụn', emoji: '⚙️' }],
-        address: 'Quận 9, TP. Hồ Chí Minh',
-        date: '28/02/2026', slot: '08:00 – 10:00',
-        status: 'weighed',
-        resultWeights: [
-            { label: 'Đồng cáp', kg: 12.5, pricePerKg: 95000 },
-            { label: 'Sắt vụn', kg: 48.0, pricePerKg: 10000 },
-        ],
-        note: 'Hàng sạch, đã phân loại sẵn',
-    },
-    {
-        id: 'YC-002',
-        types: [{ label: 'Giấy Carton', emoji: '📦' }],
-        address: 'Quận 9, TP. Hồ Chí Minh',
-        date: '01/03/2026', slot: '13:00 – 15:00',
-        status: 'scheduled',
-    },
-    {
-        id: 'YC-003',
-        types: [{ label: 'Nhựa cứng', emoji: '🪣' }, { label: 'Nhựa mềm', emoji: '🛍️' }, { label: 'Thiếc', emoji: '🥫' }],
-        address: 'Quận 9, TP. Hồ Chí Minh',
-        date: '03/03/2026', slot: '09:00 – 11:00',
-        status: 'pending',
-    },
-    {
-        id: 'YC-004',
-        types: [{ label: 'Điện tử', emoji: '💻' }],
-        address: 'Quận 9, TP. Hồ Chí Minh',
-        date: '15/02/2026', slot: '07:00 – 09:00',
-        status: 'done',
-        resultWeights: [{ label: 'Điện tử', kg: 5.2, pricePerKg: 12000 }],
-    },
-];
 
 const STATUS = {
     pending: { label: 'Chờ xác nhận', bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400', step: 0 },
@@ -92,15 +55,15 @@ const RequestCard = ({ req, expanded, onToggle }) => {
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-bold text-slate-700">{req.id}</span>
+                        <span className="text-sm font-bold text-slate-700">{req.requestCode}</span>
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
                             {s.label}
                         </span>
                     </div>
                     <p className="text-xs text-slate-500 mt-1 truncate">
-                        {req.types.map(t => t.label).join(' · ')}
+                        {req.types?.map(t => t.label).join(' · ')}
                     </p>
-                    <p className="text-xs text-slate-400 mt-0.5">{req.date} · {req.slot}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{req.pickupDate} · {req.pickupSlot}</p>
                 </div>
                 <div className="flex-shrink-0 text-right">
                     {totalKg !== undefined ? (
@@ -150,14 +113,14 @@ const RequestCard = ({ req, expanded, onToggle }) => {
 
                     {/* Address */}
                     <div className="text-sm text-slate-500">
-                        <span className="font-semibold text-slate-700">Địa chỉ: </span>{req.address}
+                        <span className="font-semibold text-slate-700">Địa chỉ: </span>{req.pickupAddress}
                     </div>
 
                     {/* Kho xử lý */}
                     {req.status !== 'pending' && (
                         <div className="text-sm text-slate-500">
                             <span className="font-semibold text-slate-700">Xử lý bởi: </span>
-                            <span className="text-green-700 font-semibold">{WAREHOUSE}</span>
+                            <span className="text-green-700 font-semibold">{req.depotName || WAREHOUSE}</span>
                         </div>
                     )}
 
@@ -169,16 +132,16 @@ const RequestCard = ({ req, expanded, onToggle }) => {
                     )}
                     {req.status === 'scheduled' && (
                         <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-sm text-blue-700">
-                            <strong>{WAREHOUSE}</strong> sẽ đến vào <strong>{req.slot}</strong> ngày <strong>{req.date}</strong>.
+                            <strong>{req.depotName || WAREHOUSE}</strong> sẽ đến vào <strong>{req.pickupSlot}</strong> ngày <strong>{req.pickupDate}</strong>.
                             Vui lòng có mặt để bàn giao và cân hàng trực tiếp.
                         </div>
                     )}
 
                     {/* Kết quả cân + hóa đơn */}
-                    {req.resultWeights && (
+                    {req.resultWeights?.length > 0 && (
                         <div className="border border-emerald-200 rounded-xl overflow-hidden">
                             <div className="bg-emerald-50 px-4 py-2.5 border-b border-emerald-100">
-                                <p className="text-sm font-bold text-emerald-700">Kết quả cân — {WAREHOUSE}</p>
+                                <p className="text-sm font-bold text-emerald-700">Kết quả cân — {req.depotName || WAREHOUSE}</p>
                             </div>
                             <div className="px-4 py-3 space-y-2">
                                 {req.resultWeights.map(w => (
@@ -218,14 +181,35 @@ const RequestCard = ({ req, expanded, onToggle }) => {
 
 // ── Main ───────────────────────────────────────────────────────────────────
 const SellerDashboard = () => {
-    const [expanded, setExpanded] = useState('YC-001');
+    const [expanded, setExpanded] = useState(null);
     const [filter, setFilter] = useState('all');
+    const [requests, setRequests] = useState([]);
+    const [statsData, setStatsData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const reqRes = await sellerService.getRequests(filter === 'all' ? null : filter);
+                setRequests(reqRes.data);
+                
+                const statRes = await sellerService.getStats();
+                setStatsData(statRes.data);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [filter]);
 
     const stats = [
-        { label: 'Tổng', value: mockRequests.length, color: 'text-slate-700', bg: 'bg-slate-100' },
-        { label: 'Chờ xử lý', value: mockRequests.filter(r => r.status === 'pending').length, color: 'text-amber-600', bg: 'bg-amber-50' },
-        { label: 'Đang xử lý', value: mockRequests.filter(r => ['scheduled', 'weighed'].includes(r.status)).length, color: 'text-blue-600', bg: 'bg-blue-50' },
-        { label: 'Hoàn tất', value: mockRequests.filter(r => r.status === 'done').length, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+        { label: 'Tổng', value: statsData?.totalRequests || 0, color: 'text-slate-700', bg: 'bg-slate-100' },
+        { label: 'Chờ xử lý', value: statsData?.pendingCount || 0, color: 'text-amber-600', bg: 'bg-amber-50' },
+        { label: 'Đang xử lý', value: statsData?.inProgressCount || 0, color: 'text-blue-600', bg: 'bg-blue-50' },
+        { label: 'Hoàn tất', value: statsData?.doneCount || 0, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     ];
 
     const FILTERS = [
@@ -235,8 +219,6 @@ const SellerDashboard = () => {
         { key: 'weighed', label: 'Đã cân' },
         { key: 'done', label: 'Hoàn tất' },
     ];
-
-    const filtered = filter === 'all' ? mockRequests : mockRequests.filter(r => r.status === filter);
 
     return (
         <div className="font-sans bg-slate-50 min-h-screen">
@@ -255,7 +237,7 @@ const SellerDashboard = () => {
                             <IconBell />
                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
                         </button>
-                        <AvatarDropdown name="Nguyễn Văn A" role="Người bán" />
+                        <AvatarDropdown name="Ngô Sỹ Giá" role="Người bán" />
                     </div>
                 </div>
             </header>
@@ -292,15 +274,9 @@ const SellerDashboard = () => {
 
                 {/* Request list */}
                 <div className="space-y-3">
-                    {filtered.map(req => (
-                        <RequestCard
-                            key={req.id}
-                            req={req}
-                            expanded={expanded === req.id}
-                            onToggle={() => setExpanded(expanded === req.id ? null : req.id)}
-                        />
-                    ))}
-                    {filtered.length === 0 && (
+                    {loading ? (
+                        <div className="text-center text-slate-400 py-10">Đang tải dữ liệu...</div>
+                    ) : requests.length === 0 ? (
                         <div className="text-center py-16">
                             <p className="text-4xl mb-3">♻️</p>
                             <p className="font-semibold text-slate-500">Không có yêu cầu nào</p>
@@ -308,6 +284,15 @@ const SellerDashboard = () => {
                                 + Đăng bán ngay
                             </Link>
                         </div>
+                    ) : (
+                        requests.map(req => (
+                            <RequestCard
+                                key={req.id}
+                                req={req}
+                                expanded={expanded === req.id}
+                                onToggle={() => setExpanded(expanded === req.id ? null : req.id)}
+                            />
+                        ))
                     )}
                 </div>
             </main>

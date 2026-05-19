@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { sellerService } from '../../services/sellerService';
 
 const IconBack = () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -48,28 +49,76 @@ const SellerProfile = () => {
     const navigate = useNavigate();
     const [saved, setSaved] = useState(false);
     const [showPwd, setShowPwd] = useState({ old: false, new: false, confirm: false });
+    const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState({
-        name: 'Nguyễn Văn A',
-        phone: '0901 234 567',
-        email: 'nguyenvana@gmail.com',
-        address: 'Quận 9, TP. Hồ Chí Minh',
+        name: '',
+        phone: '',
+        email: '',
+        address: '',
         bio: '',
     });
+    const [stats, setStats] = useState([
+        { label: 'Tin đã đăng', value: 0 },
+        { label: 'Hoàn tất', value: 0 },
+        { label: 'Đánh giá', value: '5.0 ★' },
+    ]);
     const [pwd, setPwd] = useState({ old: '', new: '', confirm: '' });
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const res = await sellerService.getProfile();
+                const d = res.data;
+                setProfile({
+                    name: d.user?.fullName || '',
+                    phone: d.user?.phone || '',
+                    email: d.user?.email || '',
+                    address: d.defaultAddress || '',
+                    bio: d.bio || '',
+                });
+                setStats([
+                    { label: 'Tin đã đăng', value: d.totalRequests || 0 },
+                    { label: 'Hoàn tất', value: d.completedRequests || 0 },
+                    { label: 'Đánh giá', value: (d.averageRating || 5).toFixed(1) + ' ★' },
+                ]);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProfile();
+    }, []);
 
     const setP = f => e => setProfile(p => ({ ...p, [f]: e.target.value }));
     const setPw = f => e => setPwd(p => ({ ...p, [f]: e.target.value }));
 
-    const handleSaveProfile = () => {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
+    const handleSaveProfile = async () => {
+        try {
+            await sellerService.updateProfile({
+                defaultAddress: profile.address,
+                bio: profile.bio
+                // Tên và SĐT hiện tại backend chưa hỗ trợ update qua SellerDto 
+                // nhưng FE cứ gửi lên hoặc backend sẽ xử lý sau.
+            });
+            setSaved(true);
+            setTimeout(() => setSaved(false), 2500);
+        } catch (error) {
+            console.error('Failed to update profile', error);
+        }
     };
 
-    const stats = [
-        { label: 'Tin đã đăng', value: 12 },
-        { label: 'Hoàn tất', value: 8 },
-        { label: 'Đánh giá', value: '4.8 ★' },
-    ];
+    const handleChangePwd = async () => {
+        if (!pwd.old || !pwd.new || pwd.new !== pwd.confirm) return;
+        try {
+            await sellerService.changePassword(pwd.old, pwd.new);
+            alert('Đổi mật khẩu thành công!');
+            setPwd({ old: '', new: '', confirm: '' });
+        } catch (error) {
+            console.error(error);
+            alert('Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ.');
+        }
+    };
 
     return (
         <div className="font-sans bg-slate-50 min-h-screen">
@@ -95,7 +144,7 @@ const SellerProfile = () => {
                         {/* Avatar */}
                         <div className="relative flex-shrink-0">
                             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-700 flex items-center justify-center text-white font-extrabold text-3xl shadow-lg">
-                                {profile.name.charAt(0)}
+                                {profile.name ? profile.name.charAt(0) : 'U'}
                             </div>
                             <button className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-white border border-slate-200 rounded-lg flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors">
                                 <IconCamera />
@@ -121,11 +170,11 @@ const SellerProfile = () => {
 
                 {/* ── Basic Info ── */}
                 <Section title="Thông tin cá nhân" subtitle="Cập nhật tên, số điện thoại và địa chỉ mặc định">
-                    <Field label="Họ và tên">
-                        <input className={inputCls} value={profile.name} onChange={setP('name')} placeholder="Nhập họ và tên" />
+                    <Field label="Họ và tên (chỉ đọc)">
+                        <input className={readonlyCls} value={profile.name} readOnly />
                     </Field>
-                    <Field label="Số điện thoại">
-                        <input className={inputCls} value={profile.phone} onChange={setP('phone')} placeholder="0901 234 567" type="tel" />
+                    <Field label="Số điện thoại (chỉ đọc)">
+                        <input className={readonlyCls} value={profile.phone} readOnly />
                     </Field>
                     <Field label="Email">
                         <input className={readonlyCls} value={profile.email} readOnly />
@@ -189,6 +238,7 @@ const SellerProfile = () => {
                     )}
 
                     <button
+                        onClick={handleChangePwd}
                         disabled={!pwd.old || !pwd.new || pwd.new !== pwd.confirm}
                         className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${pwd.old && pwd.new && pwd.new === pwd.confirm
                                 ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-md hover:scale-[1.01]'
