@@ -10,7 +10,9 @@ using Renats_BE.Services.Interfaces;
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Database ──────────────────────────────────────────────────────────────────
-var dataSourceBuilder = new NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
+var dataSourceBuilder = new NpgsqlDataSourceBuilder(
+    builder.Configuration.GetConnectionString("DefaultConnection"));
+
 dataSourceBuilder.MapEnum<UserRole>("user_role");
 dataSourceBuilder.MapEnum<MaterialType>("material_type");
 dataSourceBuilder.MapEnum<BatchStatus>("batch_status");
@@ -18,6 +20,7 @@ dataSourceBuilder.MapEnum<TransportType>("transport_type");
 dataSourceBuilder.MapEnum<BidStatus>("bid_status");
 dataSourceBuilder.MapEnum<TransportStatus>("transport_status");
 dataSourceBuilder.MapEnum<InvoiceStatus>("invoice_status");
+
 var dataSource = dataSourceBuilder.Build();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -31,23 +34,24 @@ builder.Services.AddScoped<IPickupRequestRepository, PickupRequestRepository>();
 builder.Services.AddScoped<ISellerService, SellerService>();
 builder.Services.AddScoped<IPickupRequestService, PickupRequestService>();
 
-// ── CORS (React dev server) ───────────────────────────────────────────────────
+// ── CORS (allow React dev server on any localhost port) ──────────────────────
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",
-                "http://127.0.0.1:5173",
-                "http://localhost:3000",
-                "http://127.0.0.1:3000"
+        policy.SetIsOriginAllowed(origin =>
+                new Uri(origin).Host == "localhost" ||
+                new Uri(origin).Host == "127.0.0.1"
               )
               .AllowAnyHeader()
-              .AllowAnyMethod());
+              .AllowAnyMethod();
+    });
 });
 
 builder.Services.AddControllers();
+
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "Re-Nats API", Version = "v1" });
@@ -55,7 +59,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// ── Seed database (tạo tài khoản admin nếu chưa có) ──
+// ── Seed database ─────────────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -69,7 +73,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowFrontend");
+
 app.UseHttpsRedirection();
+
 app.UseAuthorization();
+
 app.MapControllers();
+
 app.Run();
