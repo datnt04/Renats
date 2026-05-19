@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { sellerService } from '../../services/sellerService';
 
 // ── Waste type catalogue ───────────────────────────────────────────────────
 const WASTE_CATALOGUE = [
@@ -334,6 +335,38 @@ const CreateListing = () => {
     const [description, setDescription] = useState('');
     const [images, setImages] = useState([]);
     const [form, setForm] = useState({ address: '', pickupDate: '', pickupSlot: '' });
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async () => {
+        setLoading(true);
+        try {
+            const payload = {
+                pickupAddress: form.address,
+                city: 'TP. Hồ Chí Minh',
+                note: description,
+                description: description,
+                pickupDate: form.pickupDate,
+                pickupSlot: form.pickupSlot,
+                items: selectedTypes.map(id => {
+                    const w = WASTE_CATALOGUE.find(x => x.id === id);
+                    return {
+                        materialId: w.id,
+                        materialLabel: w.label,
+                        materialEmoji: w.emoji
+                    };
+                })
+            };
+            
+            await sellerService.createRequest(payload);
+            alert('Đã gửi yêu cầu! Kho sẽ liên hệ sớm.');
+            navigate('/seller/dashboard');
+        } catch (error) {
+            console.error(error);
+            alert('Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại!');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const canNext = () => {
         if (step === 0) return selectedTypes.length > 0;
@@ -393,9 +426,11 @@ const CreateListing = () => {
                         </>
                     ) : (
                         <div className="flex flex-col w-full gap-3">
-                            <button onClick={() => { alert('Đã gửi yêu cầu! Kho sẽ liên hệ sớm.'); navigate('/seller/dashboard'); }}
-                                className="w-full py-4 rounded-xl bg-green-700 hover:bg-green-800 text-white font-extrabold text-base shadow-md shadow-green-200 hover:scale-[1.01] transition-all">
-                                📤 Gửi yêu cầu đến Kho
+                            <button onClick={handleSubmit} disabled={loading}
+                                className={`w-full py-4 rounded-xl font-extrabold text-base shadow-md transition-all ${
+                                    loading ? 'bg-slate-400 text-white cursor-not-allowed' : 'bg-green-700 hover:bg-green-800 text-white shadow-green-200 hover:scale-[1.01]'
+                                }`}>
+                                {loading ? 'Đang gửi...' : '📤 Gửi yêu cầu đến Kho'}
                             </button>
                             <div className="flex gap-3">
                                 <button onClick={() => setStep(1)}
