@@ -5,5 +5,6 @@ public enum UserRole
     ADMIN,
     DEPOT,
     FACTORY,
-    DRIVER
+    DRIVER,
+    SELLER
 }

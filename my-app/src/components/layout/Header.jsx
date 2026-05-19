@@ -26,13 +26,15 @@ const Header = () => {
                     </nav>
                     {/* Auth Buttons */}
                     <div className="flex items-center space-x-4">
-                        <a className="text-sm font-semibold text-slate-700 hover:text-primary" href="#">Đăng nhập</a>
-                        <a
+                        <Link className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" to="/dang-nhap">
+                            Đăng nhập
+                        </Link>
+                        <Link
                             className="bg-primary hover:bg-secondary text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-md shadow-green-200"
-                            href="#"
+                            to="/dang-ky"
                         >
                             Đăng ký ngay
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>
