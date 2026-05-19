@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Renats_BE.Data;
+using Renats_BE.DTOs.Seller;
+using Renats_BE.Services.Interfaces;
 
 namespace Renats_BE.Controllers.Seller;
 
@@ -8,140 +8,50 @@ namespace Renats_BE.Controllers.Seller;
 [Route("api/seller/profile")]
 public class SellerProfileController : ControllerBase
 {
-    private readonly AppDbContext _db;
-    public SellerProfileController(AppDbContext db) => _db = db;
+    private readonly ISellerService _service;
+    public SellerProfileController(ISellerService service) => _service = service;
 
-    // GET /api/seller/profile/{sellerId}
-    [HttpGet("{sellerId}")]
+    /// <summary>Lấy hồ sơ seller</summary>
+    [HttpGet("{sellerId:guid}")]
     public async Task<IActionResult> GetProfile(Guid sellerId)
     {
-        var seller = await _db.Sellers
-            .Where(s => s.Id == sellerId)
-            .Include(s => s.User)
-            .FirstOrDefaultAsync();
-
-        if (seller is null) return NotFound();
-
-        return Ok(new
-        {
-            id = seller.Id,
-            userId = seller.UserId,
-            name = seller.User.FullName,
-            phone = seller.User.Phone,
-            email = seller.User.Email,
-            defaultAddress = seller.DefaultAddress,
-            city = seller.City,
-            province = seller.Province,
-            bio = seller.Bio,
-            totalRequests = seller.TotalRequests,
-            completedRequests = seller.CompletedRequests,
-            averageRating = seller.AverageRating,
-            createdAt = seller.CreatedAt
-        });
+        var result = await _service.GetProfileAsync(sellerId);
+        return result is null ? NotFound() : Ok(result);
     }
 
-    // PUT /api/seller/profile/{sellerId}  – Cập nhật hồ sơ
-    [HttpPut("{sellerId}")]
+    /// <summary>Cập nhật hồ sơ</summary>
+    [HttpPut("{sellerId:guid}")]
     public async Task<IActionResult> UpdateProfile(Guid sellerId, [FromBody] UpdateProfileDto dto)
     {
-        var seller = await _db.Sellers
-            .Include(s => s.User)
-            .FirstOrDefaultAsync(s => s.Id == sellerId);
-
-        if (seller is null) return NotFound();
-
-        // Cập nhật User
-        if (dto.Name is not null) seller.User.FullName = dto.Name;
-        if (dto.Phone is not null) seller.User.Phone = dto.Phone;
-        seller.User.UpdatedAt = DateTime.UtcNow;
-
-        // Cập nhật Seller
-        if (dto.DefaultAddress is not null) seller.DefaultAddress = dto.DefaultAddress;
-        if (dto.City is not null) seller.City = dto.City;
-        if (dto.Province is not null) seller.Province = dto.Province;
-        if (dto.Bio is not null) seller.Bio = dto.Bio;
-
-        await _db.SaveChangesAsync();
-
-        return Ok(new { message = "Cập nhật hồ sơ thành công" });
+        var ok = await _service.UpdateProfileAsync(sellerId, dto);
+        return ok ? Ok(new { message = "Cập nhật thành công" }) : NotFound();
     }
 
-    // PATCH /api/seller/profile/{sellerId}/change-password
-    [HttpPatch("{sellerId}/change-password")]
+    /// <summary>Đổi mật khẩu</summary>
+    [HttpPatch("{sellerId:guid}/change-password")]
     public async Task<IActionResult> ChangePassword(Guid sellerId, [FromBody] ChangePasswordDto dto)
     {
-        var seller = await _db.Sellers
-            .Include(s => s.User)
-            .FirstOrDefaultAsync(s => s.Id == sellerId);
-
-        if (seller is null) return NotFound();
-
-        // TODO: Verify old password hash before updating
-        // For now, we just update the password hash directly
         if (string.IsNullOrEmpty(dto.NewPassword) || dto.NewPassword.Length < 6)
             return BadRequest("Mật khẩu mới phải có ít nhất 6 ký tự");
 
-        // In production: BCrypt.HashPassword(dto.NewPassword)
-        seller.User.PasswordHash = dto.NewPassword;
-        seller.User.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
-
+        var ok = await _service.ChangePasswordAsync(sellerId, dto.OldPassword, dto.NewPassword);
+        if (!ok) return BadRequest("Mật khẩu hiện tại không đúng hoặc tài khoản không tồn tại");
         return Ok(new { message = "Đổi mật khẩu thành công" });
     }
 
-    // DELETE /api/seller/profile/{sellerId}  – Xóa tài khoản
-    [HttpDelete("{sellerId}")]
-    public async Task<IActionResult> DeleteAccount(Guid sellerId)
-    {
-        var seller = await _db.Sellers
-            .Include(s => s.User)
-            .FirstOrDefaultAsync(s => s.Id == sellerId);
-
-        if (seller is null) return NotFound();
-
-        // Soft delete: deactivate user instead of hard delete
-        seller.User.IsActive = false;
-        seller.User.UpdatedAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync();
-
-        return Ok(new { message = "Tài khoản đã được vô hiệu hóa" });
-    }
-
-    // GET /api/seller/profile/{sellerId}/stats
-    [HttpGet("{sellerId}/stats")]
+    /// <summary>Lấy thống kê yêu cầu của seller</summary>
+    [HttpGet("{sellerId:guid}/stats")]
     public async Task<IActionResult> GetStats(Guid sellerId)
     {
-        var stats = await _db.PickupRequests
-            .Where(r => r.SellerId == sellerId)
-            .GroupBy(r => r.Status)
-            .Select(g => new { status = g.Key.ToString(), count = g.Count() })
-            .ToListAsync();
-
-        var totalEarned = await _db.PickupResults
-            .Where(r => r.PickupRequest.SellerId == sellerId)
-            .SumAsync(r => (decimal?)(r.WeightKg * r.PricePerKg)) ?? 0;
-
-        return Ok(new
-        {
-            stats,
-            totalEarned,
-            totalRequests = stats.Sum(s => s.count)
-        });
+        var result = await _service.GetStatsAsync(sellerId);
+        return Ok(result);
     }
 
-    public class UpdateProfileDto
+    /// <summary>Vô hiệu hóa tài khoản (soft delete)</summary>
+    [HttpDelete("{sellerId:guid}")]
+    public async Task<IActionResult> DeleteAccount(Guid sellerId)
     {
-        public string? Name { get; set; }
-        public string? Phone { get; set; }
-        public string? DefaultAddress { get; set; }
-        public string? City { get; set; }
-        public string? Province { get; set; }
-        public string? Bio { get; set; }
-    }
-
-    public class ChangePasswordDto
-    {
-        public string OldPassword { get; set; } = string.Empty;
-        public string NewPassword { get; set; } = string.Empty;
+        var ok = await _service.DeleteAccountAsync(sellerId);
+        return ok ? Ok(new { message = "Tài khoản đã bị vô hiệu hóa" }) : NotFound();
     }
 }
