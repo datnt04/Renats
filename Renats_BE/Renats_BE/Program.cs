@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Renats_BE.Data;
 using Renats_BE.Repositories;
 using Renats_BE.Repositories.Interfaces;
 using Renats_BE.Services;
 using Renats_BE.Services.Interfaces;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +23,35 @@ builder.Services.AddScoped<IPickupRequestRepository, PickupRequestRepository>();
 // ── Services ──────────────────────────────────────────────────────────────────
 builder.Services.AddScoped<ISellerService, SellerService>();
 builder.Services.AddScoped<IPickupRequestService, PickupRequestService>();
+
+// ── HttpClient (dùng cho xác thực token Social từ Google/Facebook) ──────────
+builder.Services.AddHttpClient();
+
+// ── JWT Authentication ────────────────────────────────────────────────────────
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Jwt:Key chưa được cấu hình trong appsettings.json");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        ValidateIssuer           = true,
+        ValidIssuer              = builder.Configuration["Jwt:Issuer"],
+        ValidateAudience         = true,
+        ValidAudience            = builder.Configuration["Jwt:Audience"],
+        ValidateLifetime         = true,
+        ClockSkew                = TimeSpan.Zero,
+    };
+});
+
+builder.Services.AddAuthorization();
 
 // ── CORS (allow React dev server on any localhost port) ──────────────────────
 builder.Services.AddCors(options =>
@@ -42,6 +74,31 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "Re-Nats API", Version = "v1" });
+
+    // Thêm hỗ trợ Authorization header trong Swagger UI
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name         = "Authorization",
+        Type         = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme       = "Bearer",
+        BearerFormat = "JWT",
+        In           = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description  = "Nhập JWT token theo định dạng: Bearer {token}",
+    });
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id   = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
 var app = builder.Build();
@@ -63,8 +120,10 @@ app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
 
+// ── Authentication PHẢI đứng TRƯỚC Authorization ─────────────────────────────
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+app.Run();
