@@ -16,13 +16,15 @@ export default function LoginPage() {
 
   // Dùng ref để chắc chắn Google SDK chỉ init 1 lần duy nhất
   const googleInitialized = useRef(false);
+  // Ref tới div chứa nút Google ẩn – để trigger click khi bấm custom button
+  const googleHiddenBtnRef = useRef(null);
 
   // Redirect nếu đã đăng nhập
   useEffect(() => {
     if (user) navigate(ROLE_HOME[user.role] || '/', { replace: true });
   }, [user, navigate]);
 
-  // Nạp Google SDK – chỉ initialize, KHÔNG renderButton (dùng custom button)
+  // Nạp Google SDK và render nút ẩn – KHÔNG dùng prompt() để tránh FedCM
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) return;
 
@@ -34,8 +36,19 @@ export default function LoginPage() {
         client_id:            GOOGLE_CLIENT_ID,
         callback:             onGoogleCredential,
         auto_select:          false,
-        use_fedcm_for_prompt: false, // Tắt FedCM – dùng popup cũ, hoạt động trên localhost
+        use_fedcm_for_prompt: false,
       });
+
+      // Render nút Google thật vào div ẩn
+      // Khi custom button bị click, ta sẽ trigger click vào đây
+      if (googleHiddenBtnRef.current) {
+        window.google.accounts.id.renderButton(googleHiddenBtnRef.current, {
+          type:  'standard',
+          size:  'large',
+          theme: 'outline',
+          width: 300,
+        });
+      }
     }
 
     if (window.google?.accounts?.id) {
@@ -52,7 +65,7 @@ export default function LoginPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Callback khi Google trả về credential
+  // Callback nhận Google credential
   async function onGoogleCredential(response) {
     setSocialLoading('google');
     setError('');
@@ -66,18 +79,21 @@ export default function LoginPage() {
     }
   }
 
-  // Click nút Google → mở popup chọn tài khoản
+  // Click custom button → trigger click lên nút Google SDK ẩn bên dưới
+  // Cách này KHÔNG dùng FedCM/prompt(), Google mở popup chọn tài khoản bình thường
   const handleGoogleClick = () => {
     if (!GOOGLE_CLIENT_ID) {
       setError('Google Client ID chưa được cấu hình trong file .env');
       return;
     }
-    if (!googleInitialized.current) {
+    const hiddenBtn = googleHiddenBtnRef.current?.querySelector('div[role="button"]');
+    if (hiddenBtn) {
+      hiddenBtn.click();
+    } else {
       setError('Google SDK chưa tải xong. Vui lòng thử lại sau vài giây.');
-      return;
     }
-    window.google.accounts.id.prompt();
   };
+
 
 
   // Đăng nhập Facebook
@@ -203,6 +219,13 @@ export default function LoginPage() {
               <span>⚠️</span> {error}
             </div>
           )}
+
+          {/* Div ẩn – Google SDK render nút thật vào đây, custom button sẽ trigger click nó */}
+          <div
+            ref={googleHiddenBtnRef}
+            aria-hidden="true"
+            style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 1, height: 1, overflow: 'hidden' }}
+          />
 
           {/* ── Social Login: Google + Facebook cạnh nhau, bằng nhau ──────── */}
           <div className="flex gap-3 mb-6">
