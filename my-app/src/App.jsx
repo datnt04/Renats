@@ -45,6 +45,7 @@ import CheckinOrderStep2 from './features/transportation/checkinOrderStep2';
 // Shared
 import Invoice from './features/shared/Invoice';
 
+import { ToastProvider } from './context/ToastContext';
 import './App.css';
 
 // Helper: bọc route với PrivateRoute
@@ -54,8 +55,9 @@ const P = ({ roles, children }) => (
 
 function App() {
   return (
-    <Router>
-      <Routes>
+    <ToastProvider>
+      <Router>
+        <Routes>
         {/* ── Auth (public) ── */}
         <Route path="/dang-nhap" element={<LoginPage />} />
         <Route path="/dang-ky"   element={<RegisterPage />} />
@@ -101,6 +103,7 @@ function App() {
         <Route path="/hoa-don/:id" element={<P roles={['SELLER','DEPOT','FACTORY','DRIVER','ADMIN']}><Invoice /></P>} />
       </Routes>
     </Router>
+    </ToastProvider>
   );
 }
 

@@ -14,7 +14,7 @@ public class SellerService : ISellerService
 
     public async Task<SellerProfileDto?> GetProfileAsync(Guid sellerId)
     {
-        var seller = await _sellerRepo.GetByIdAsync(sellerId);
+        var seller = await _sellerRepo.GetByUserIdAsync(sellerId);
         if (seller is null) return null;
 
         return MapToProfileDto(seller);
@@ -22,7 +22,7 @@ public class SellerService : ISellerService
 
     public async Task<bool> UpdateProfileAsync(Guid sellerId, UpdateProfileDto dto)
     {
-        var seller = await _sellerRepo.GetByIdAsync(sellerId);
+        var seller = await _sellerRepo.GetByUserIdAsync(sellerId);
         if (seller is null) return false;
 
         if (dto.Name is not null) seller.User.FullName = dto.Name;
@@ -39,7 +39,7 @@ public class SellerService : ISellerService
 
     public async Task<bool> ChangePasswordAsync(Guid sellerId, string oldPassword, string newPassword)
     {
-        var seller = await _sellerRepo.GetByIdAsync(sellerId);
+        var seller = await _sellerRepo.GetByUserIdAsync(sellerId);
         if (seller is null) return false;
 
         // TODO: replace with BCrypt.Verify in production
@@ -53,7 +53,7 @@ public class SellerService : ISellerService
 
     public async Task<SellerStatsDto> GetStatsAsync(Guid sellerId)
     {
-        var seller = await _sellerRepo.GetByIdAsync(sellerId);
+        var seller = await _sellerRepo.GetByUserIdAsync(sellerId);
         if (seller is null) return new();
 
         // Stats are cached on Seller entity; detailed breakdown done via request repo
@@ -66,7 +66,7 @@ public class SellerService : ISellerService
 
     public async Task<bool> DeleteAccountAsync(Guid sellerId)
     {
-        var seller = await _sellerRepo.GetByIdAsync(sellerId);
+        var seller = await _sellerRepo.GetByUserIdAsync(sellerId);
         if (seller is null) return false;
 
         seller.User.IsActive = false;
@@ -106,12 +106,15 @@ public class PickupRequestService : IPickupRequestService
 
     public async Task<List<PickupRequestSummaryDto>> GetRequestsAsync(Guid sellerId, string? status)
     {
+        var seller = await _sellerRepo.GetByUserIdAsync(sellerId);
+        if (seller is null) return [];
+
         PickupRequestStatus? parsed = null;
         if (!string.IsNullOrEmpty(status) &&
             Enum.TryParse<PickupRequestStatus>(status, ignoreCase: true, out var s))
             parsed = s;
 
-        var requests = await _requestRepo.GetBySellerIdAsync(sellerId, parsed);
+        var requests = await _requestRepo.GetBySellerIdAsync(seller.Id, parsed);
         return requests.Select(MapToSummaryDto).ToList();
     }
 
@@ -124,16 +127,16 @@ public class PickupRequestService : IPickupRequestService
 
     public async Task<CreateRequestResultDto> CreateRequestAsync(CreatePickupRequestDto dto)
     {
-        var seller = await _sellerRepo.GetByIdAsync(dto.SellerId)
+        var seller = await _sellerRepo.GetByUserIdAsync(dto.SellerId)
             ?? throw new KeyNotFoundException("Seller not found");
 
-        var count = await _requestRepo.CountBySellerIdAsync(dto.SellerId);
-        var code = $"YC-{(count + 1):D3}";
+        var random = new Random();
+        var code = $"YC-{DateTime.UtcNow:yyMMdd}-{random.Next(1000, 9999)}";
 
         var request = new PickupRequest
         {
             RequestCode = code,
-            SellerId = dto.SellerId,
+            SellerId = seller.Id,
             PickupAddress = dto.PickupAddress,
             PickupDate = DateTime.SpecifyKind(dto.PickupDate, DateTimeKind.Utc),
             PickupSlot = dto.PickupSlot,

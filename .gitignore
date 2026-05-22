@@ -120,8 +120,8 @@ logs/
 *.key
 *.p12
 
-# appsettings.json        → SAFE để commit (chỉ chứa placeholder)
-# appsettings.*.json      → KHÔNG commit (chứa secrets thật)
+# appsettings.json        → KHÔNG commit (chứa secrets thật)
+appsettings.json
 appsettings.Development.json
 appsettings.Production.json
 appsettings.Staging.json
