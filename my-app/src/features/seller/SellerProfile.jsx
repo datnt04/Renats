@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { sellerService } from '../../services/sellerService';
+import { useToast } from '../../context/ToastContext';
 
 const IconBack = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
     </svg>
 );
@@ -14,7 +15,7 @@ const IconCamera = () => (
     </svg>
 );
 const IconCheck = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
     </svg>
 );
@@ -35,17 +36,18 @@ const readonlyCls = "w-full bg-slate-50 border border-slate-100 rounded-xl px-4 
 
 // ─── Section wrapper ──────────────────────────────────────────────────────
 const Section = ({ title, subtitle, children }) => (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-100">
-            <h2 className="font-extrabold text-slate-900">{title}</h2>
-            {subtitle && <p className="text-sm text-slate-400 mt-0.5">{subtitle}</p>}
+    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100/50">
+            <h2 className="font-extrabold text-slate-900 text-lg">{title}</h2>
+            {subtitle && <p className="text-sm text-slate-400 mt-0.5 font-medium">{subtitle}</p>}
         </div>
-        <div className="px-6 py-5 space-y-4">{children}</div>
+        <div className="px-6 py-6 space-y-5">{children}</div>
     </div>
 );
 
 // ─── Main ─────────────────────────────────────────────────────────────────
 const SellerProfile = () => {
+    const toast = useToast();
     const navigate = useNavigate();
     const [saved, setSaved] = useState(false);
     const [showPwd, setShowPwd] = useState({ old: false, new: false, confirm: false });
@@ -68,7 +70,7 @@ const SellerProfile = () => {
         const fetchProfile = async () => {
             try {
                 const res = await sellerService.getProfile();
-                const d = res.data;
+                const d = res;
                 setProfile({
                     name: d.user?.fullName || '',
                     phone: d.user?.phone || '',
@@ -83,12 +85,13 @@ const SellerProfile = () => {
                 ]);
             } catch (error) {
                 console.error(error);
+                toast.error('Lỗi khi tải thông tin hồ sơ của bạn.');
             } finally {
                 setLoading(false);
             }
         };
         fetchProfile();
-    }, []);
+    }, [toast]);
 
     const setP = f => e => setProfile(p => ({ ...p, [f]: e.target.value }));
     const setPw = f => e => setPwd(p => ({ ...p, [f]: e.target.value }));
@@ -98,13 +101,13 @@ const SellerProfile = () => {
             await sellerService.updateProfile({
                 defaultAddress: profile.address,
                 bio: profile.bio
-                // Tên và SĐT hiện tại backend chưa hỗ trợ update qua SellerDto 
-                // nhưng FE cứ gửi lên hoặc backend sẽ xử lý sau.
             });
             setSaved(true);
+            toast.success('Đã cập nhật thông tin cá nhân thành công!');
             setTimeout(() => setSaved(false), 2500);
         } catch (error) {
             console.error('Failed to update profile', error);
+            toast.error('Không thể cập nhật hồ sơ. Vui lòng thử lại!');
         }
     };
 
@@ -112,165 +115,186 @@ const SellerProfile = () => {
         if (!pwd.old || !pwd.new || pwd.new !== pwd.confirm) return;
         try {
             await sellerService.changePassword(pwd.old, pwd.new);
-            alert('Đổi mật khẩu thành công!');
+            toast.success('Đổi mật khẩu thành công!');
             setPwd({ old: '', new: '', confirm: '' });
         } catch (error) {
             console.error(error);
-            alert('Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ.');
+            toast.error('Đổi mật khẩu thất bại. Vui lòng kiểm tra lại mật khẩu cũ.');
         }
     };
 
     return (
         <div className="font-sans bg-slate-50 min-h-screen">
-
             {/* Topbar */}
             <header className="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200">
-                <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+                <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
                     <button onClick={() => navigate('/seller/dashboard')}
-                        className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
-                        <IconBack />
-                        Dashboard
+                        className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">
+                        <IconBack /> Dashboard
                     </button>
                     <span className="text-sm font-extrabold text-slate-800">Hồ sơ cá nhân</span>
                     <div className="w-20" />
                 </div>
             </header>
 
-            <main className="max-w-2xl mx-auto px-4 py-8 space-y-5">
-
-                {/* ── Avatar & Stats ── */}
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                    <div className="flex items-start gap-5">
-                        {/* Avatar */}
-                        <div className="relative flex-shrink-0">
-                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-700 flex items-center justify-center text-white font-extrabold text-3xl shadow-lg">
-                                {profile.name ? profile.name.charAt(0) : 'U'}
+            <main className="max-w-5xl mx-auto px-4 py-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                    {/* Left Panel: Profile Quick Summary */}
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 text-center">
+                            {/* Avatar */}
+                            <div className="relative w-24 h-24 mx-auto mb-4">
+                                <div className="w-full h-full rounded-2xl bg-gradient-to-br from-emerald-500 to-green-700 flex items-center justify-center text-white font-extrabold text-4xl shadow-lg">
+                                    {profile.name ? profile.name.charAt(0) : 'U'}
+                                </div>
+                                <button className="absolute -bottom-1 -right-1 w-8 h-8 bg-white border border-slate-200 rounded-xl flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors cursor-pointer">
+                                    <IconCamera />
+                                </button>
                             </div>
-                            <button className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-white border border-slate-200 rounded-lg flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors">
-                                <IconCamera />
-                            </button>
-                        </div>
 
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-xl font-extrabold text-slate-900">{profile.name}</h1>
-                            <p className="text-sm text-slate-400 mt-0.5">{profile.phone} · {profile.address}</p>
-                            {/* Stats */}
-                            <div className="flex gap-5 mt-4">
+                            {/* Name & Basic Info */}
+                            <h2 className="text-xl font-extrabold text-slate-800">{profile.name || 'Người dùng Re-Nats'}</h2>
+                            <p className="text-xs text-slate-400 font-semibold mt-1">{profile.phone || 'Chưa cập nhật số điện thoại'}</p>
+
+                            {/* Quick Stats Grid */}
+                            <div className="grid grid-cols-3 gap-2 mt-6 pt-6 border-t border-slate-100/50">
                                 {stats.map(s => (
                                     <div key={s.label} className="text-center">
-                                        <p className="text-lg font-extrabold text-slate-800">{s.value}</p>
-                                        <p className="text-xs text-slate-400">{s.label}</p>
+                                        <p className="text-base font-extrabold text-slate-800">{s.value}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold mt-0.5">{s.label}</p>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                {/* ── Basic Info ── */}
-                <Section title="Thông tin cá nhân" subtitle="Cập nhật tên, số điện thoại và địa chỉ mặc định">
-                    <Field label="Họ và tên (chỉ đọc)">
-                        <input className={readonlyCls} value={profile.name} readOnly />
-                    </Field>
-                    <Field label="Số điện thoại (chỉ đọc)">
-                        <input className={readonlyCls} value={profile.phone} readOnly />
-                    </Field>
-                    <Field label="Email">
-                        <input className={readonlyCls} value={profile.email} readOnly />
-                        <p className="text-xs text-slate-400 mt-1">Email không thể thay đổi</p>
-                    </Field>
-                    <Field label="Địa chỉ mặc định">
-                        <input className={inputCls} value={profile.address} onChange={setP('address')} placeholder="Quận / Huyện, Tỉnh / TP" />
-                    </Field>
-                    <Field label="Giới thiệu bản thân">
-                        <textarea rows={3} className={inputCls + ' resize-none'} value={profile.bio} onChange={setP('bio')}
-                            placeholder="Ví dụ: Tôi chuyên thu gom đồng cáp và kim loại màu ở khu vực Quận 9..." />
-                    </Field>
-
-                    <button onClick={handleSaveProfile}
-                        className={`w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2
-                            ${saved ? 'bg-emerald-600 text-white' : 'bg-green-700 hover:bg-green-800 text-white shadow-md shadow-green-100 hover:scale-[1.01]'}`}>
-                        {saved ? <><IconCheck /> Đã lưu!</> : 'Lưu thay đổi'}
-                    </button>
-                </Section>
-
-                {/* ── Change Password ── */}
-                <Section title="Đổi mật khẩu" subtitle="Đặt mật khẩu mạnh để bảo mật tài khoản">
-                    {[
-                        { label: 'Mật khẩu hiện tại', field: 'old', placeholder: '••••••••' },
-                        { label: 'Mật khẩu mới', field: 'new', placeholder: 'Ít nhất 8 ký tự' },
-                        { label: 'Xác nhận mật khẩu mới', field: 'confirm', placeholder: 'Nhập lại mật khẩu mới' },
-                    ].map(({ label, field, placeholder }) => (
-                        <Field key={field} label={label}>
-                            <div className="relative">
-                                <input
-                                    type={showPwd[field] ? 'text' : 'password'}
-                                    className={inputCls + ' pr-11'}
-                                    value={pwd[field]}
-                                    onChange={setPw(field)}
-                                    placeholder={placeholder}
-                                />
-                                <button type="button"
-                                    onClick={() => setShowPwd(p => ({ ...p, [field]: !p[field] }))}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
-                                    <IconEye show={showPwd[field]} />
-                                </button>
-                            </div>
-                        </Field>
-                    ))}
-
-                    {/* Password strength indicator */}
-                    {pwd.new && (
-                        <div>
-                            <div className="flex gap-1 mb-1">
-                                {[1, 2, 3, 4].map(i => (
-                                    <div key={i} className={`flex-1 h-1 rounded-full transition-colors ${pwd.new.length >= i * 2
-                                            ? pwd.new.length >= 8 ? 'bg-emerald-500' : 'bg-amber-400'
-                                            : 'bg-slate-200'
-                                        }`} />
-                                ))}
-                            </div>
-                            <p className="text-xs text-slate-400">
-                                {pwd.new.length < 6 ? 'Yếu' : pwd.new.length < 8 ? 'Trung bình' : 'Mạnh'}
-                            </p>
+                        {/* Navigation Sidebar Quick Links */}
+                        <div className="bg-white rounded-3xl border border-slate-100 p-4 shadow-sm space-y-1">
+                            <button className="w-full text-left px-4 py-3 rounded-2xl text-sm font-extrabold bg-green-50 text-green-700 flex items-center justify-between cursor-pointer">
+                                <span>👤 Thông tin cá nhân</span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-600" />
+                            </button>
+                            <button className="w-full text-left px-4 py-3 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors flex items-center justify-between cursor-pointer">
+                                <span>🔒 Mật khẩu & Bảo mật</span>
+                            </button>
+                            <button className="w-full text-left px-4 py-3 rounded-2xl text-sm font-semibold text-red-500 hover:bg-red-50/50 transition-colors flex items-center justify-between cursor-pointer">
+                                <span>⚠️ Vùng nguy hiểm</span>
+                            </button>
                         </div>
-                    )}
 
-                    <button
-                        onClick={handleChangePwd}
-                        disabled={!pwd.old || !pwd.new || pwd.new !== pwd.confirm}
-                        className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${pwd.old && pwd.new && pwd.new === pwd.confirm
-                                ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-md hover:scale-[1.01]'
-                                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                            }`}>
-                        Cập nhật mật khẩu
-                    </button>
-                </Section>
-
-                {/* ── Danger zone ── */}
-                <div className="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
-                    <div className="px-6 py-5 border-b border-red-100">
-                        <h2 className="font-extrabold text-red-600">Vùng nguy hiểm</h2>
-                        <p className="text-sm text-slate-400 mt-0.5">Các thao tác không thể khôi phục</p>
-                    </div>
-                    <div className="px-6 py-5 flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-semibold text-slate-700">Xoá tài khoản</p>
-                            <p className="text-xs text-slate-400 mt-0.5">Tất cả dữ liệu sẽ bị xóa vĩnh viễn</p>
-                        </div>
-                        <button className="px-4 py-2 rounded-xl border border-red-200 text-red-500 text-sm font-semibold hover:bg-red-50 transition-colors">
-                            Xoá tài khoản
+                        {/* Logout button */}
+                        <button onClick={() => {
+                            localStorage.removeItem('renats_token');
+                            navigate('/');
+                            toast.success('Đã đăng xuất thành công!');
+                        }}
+                            className="w-full py-3.5 rounded-2xl border border-slate-200 text-slate-500 font-bold text-sm hover:bg-slate-100 hover:text-slate-700 transition-all cursor-pointer text-center block bg-white shadow-sm">
+                            🚪 Đăng xuất
                         </button>
                     </div>
+
+                    {/* Right Panel: Settings Forms */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* ── Basic Info ── */}
+                        <Section title="Thông tin cá nhân" subtitle="Cập nhật tên, số điện thoại và địa chỉ mặc định">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Field label="Họ và tên (chỉ đọc)">
+                                    <input className={readonlyCls} value={profile.name} readOnly />
+                                </Field>
+                                <Field label="Số điện thoại (chỉ đọc)">
+                                    <input className={readonlyCls} value={profile.phone} readOnly />
+                                </Field>
+                            </div>
+                            <Field label="Email">
+                                <input className={readonlyCls} value={profile.email} readOnly />
+                                <p className="text-[10px] text-slate-400 mt-1 font-bold">Email tài khoản không thể thay đổi</p>
+                            </Field>
+                            <Field label="Địa chỉ mặc định">
+                                <input className={inputCls} value={profile.address} onChange={setP('address')} placeholder="Quận / Huyện, Tỉnh / TP" />
+                            </Field>
+                            <Field label="Giới thiệu bản thân">
+                                <textarea rows={3} className={inputCls + ' resize-none'} value={profile.bio} onChange={setP('bio')}
+                                    placeholder="Ví dụ: Tôi chuyên thu gom đồng cáp và kim loại màu ở khu vực Quận 9..." />
+                            </Field>
+
+                            <button onClick={handleSaveProfile}
+                                className={`w-full py-3.5 rounded-2xl font-extrabold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer
+                                    ${saved ? 'bg-emerald-600 text-white' : 'bg-green-700 hover:bg-green-800 text-white shadow-md shadow-green-100 hover:scale-[1.01]'}`}>
+                                {saved ? <><IconCheck /> Đã lưu thông tin!</> : 'Lưu thay đổi'}
+                            </button>
+                        </Section>
+
+                        {/* ── Change Password ── */}
+                        <Section title="Đổi mật khẩu" subtitle="Đặt mật khẩu mạnh để bảo mật tài khoản">
+                            {[
+                                { label: 'Mật khẩu hiện tại', field: 'old', placeholder: '••••••••' },
+                                { label: 'Mật khẩu mới', field: 'new', placeholder: 'Ít nhất 8 ký tự' },
+                                { label: 'Xác nhận mật khẩu mới', field: 'confirm', placeholder: 'Nhập lại mật khẩu mới' },
+                            ].map(({ label, field, placeholder }) => (
+                                <Field key={field} label={label}>
+                                    <div className="relative">
+                                        <input
+                                            type={showPwd[field] ? 'text' : 'password'}
+                                            className={inputCls + ' pr-11'}
+                                            value={pwd[field]}
+                                            onChange={setPw(field)}
+                                            placeholder={placeholder}
+                                        />
+                                        <button type="button"
+                                            onClick={() => setShowPwd(p => ({ ...p, [field]: !p[field] }))}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                                            <IconEye show={showPwd[field]} />
+                                        </button>
+                                    </div>
+                                </Field>
+                            ))}
+
+                            {/* Password strength indicator */}
+                            {pwd.new && (
+                                <div>
+                                    <div className="flex gap-1 mb-1">
+                                        {[1, 2, 3, 4].map(i => (
+                                            <div key={i} className={`flex-1 h-1 rounded-full transition-colors ${pwd.new.length >= i * 2
+                                                    ? pwd.new.length >= 8 ? 'bg-emerald-500' : 'bg-amber-400'
+                                                    : 'bg-slate-200'
+                                                }`} />
+                                        ))}
+                                    </div>
+                                    <p className="text-xs font-semibold text-slate-400">
+                                        Độ bảo mật: {pwd.new.length < 6 ? 'Yếu ❌' : pwd.new.length < 8 ? 'Trung bình ⚠️' : 'Mạnh ghê! 💪'}
+                                    </p>
+                                </div>
+                            )}
+
+                            <button
+                                onClick={handleChangePwd}
+                                disabled={!pwd.old || !pwd.new || pwd.new !== pwd.confirm}
+                                className={`w-full py-3.5 rounded-2xl font-extrabold text-sm transition-all cursor-pointer ${pwd.old && pwd.new && pwd.new === pwd.confirm
+                                        ? 'bg-slate-900 hover:bg-slate-800 text-white shadow-md hover:scale-[1.01]'
+                                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                    }`}>
+                                Cập nhật mật khẩu
+                            </button>
+                        </Section>
+
+                        {/* ── Danger zone ── */}
+                        <div className="bg-white rounded-3xl border border-red-100 shadow-sm overflow-hidden">
+                            <div className="px-6 py-5 border-b border-red-50">
+                                <h2 className="font-extrabold text-red-600">Vùng nguy hiểm</h2>
+                                <p className="text-sm text-slate-400 mt-0.5 font-medium">Các thao tác không thể khôi phục</p>
+                            </div>
+                            <div className="px-6 py-5 flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-700">Xoá tài khoản</p>
+                                    <p className="text-xs text-slate-400 mt-0.5 font-medium">Tất cả dữ liệu sẽ bị xóa vĩnh viễn và không thể phục hồi.</p>
+                                </div>
+                                <button onClick={() => toast.info('Tính năng xóa tài khoản đang được quản trị viên xử lý.')}
+                                    className="px-4 py-2.5 rounded-xl border border-red-200 text-red-500 text-sm font-bold hover:bg-red-50 transition-colors cursor-pointer">
+                                    Xoá tài khoản
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                {/* Logout */}
-                <button onClick={() => navigate('/')}
-                    className="w-full py-3.5 rounded-xl border border-slate-200 text-slate-500 font-semibold text-sm hover:bg-slate-100 transition-colors">
-                    Đăng xuất
-                </button>
-
             </main>
         </div>
     );
