@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../app/AuthContext';
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 const IconUser = ({ cls = 'w-5 h-5' }) => (
@@ -33,17 +34,34 @@ const IconChevron = ({ cls = 'w-4 h-4' }) => (
     </svg>
 );
 
-// ── Avatar Dropdown (exported for reuse) ───────────────────────────────────
-export const AvatarDropdown = ({ name = 'Nguyễn Văn A', role = 'Người bán' }) => {
+// ── Avatar Dropdown ───────────────────────────────────────────────────────────
+// Lấy tên & role động từ AuthContext, không hardcode
+export const AvatarDropdown = () => {
     const [open, setOpen] = useState(false);
-    const navigate = useNavigate();
+    const navigate        = useNavigate();
+    const { user, logout } = useAuth();
+
+    // Hiển thị tên đăng nhập từ session; fallback nếu chưa có
+    const displayName = user?.fullName || user?.email || 'Người dùng';
+    const displayRole = user?.role === 'SELLER'  ? 'Người bán'
+                      : user?.role === 'DEPOT'   ? 'Điểm thu gom'
+                      : user?.role === 'FACTORY' ? 'Nhà máy'
+                      : user?.role === 'DRIVER'  ? 'Tài xế'
+                      : user?.role === 'ADMIN'   ? 'Quản trị viên'
+                      : 'Thành viên';
+
+    const handleLogout = () => {
+        setOpen(false);
+        logout();
+        navigate('/dang-nhap', { replace: true });
+    };
 
     const menuItems = [
         { icon: <IconUser />, label: 'Hồ sơ cá nhân', to: '/seller/ho-so' },
-        { icon: <IconGrid />, label: 'Dashboard', to: '/seller/dashboard' },
-        { icon: <IconBell />, label: 'Thông báo', to: '#' },
+        { icon: <IconGrid />, label: 'Dashboard',      to: '/seller/dashboard' },
+        { icon: <IconBell />, label: 'Thông báo',      to: '#' },
         { divider: true },
-        { icon: <IconLogout />, label: 'Đăng xuất', action: () => navigate('/'), danger: true },
+        { icon: <IconLogout />, label: 'Đăng xuất', action: handleLogout, danger: true },
     ];
 
     return (
@@ -52,12 +70,13 @@ export const AvatarDropdown = ({ name = 'Nguyễn Văn A', role = 'Người bán
                 onClick={() => setOpen(o => !o)}
                 className="flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-xl hover:bg-slate-100 transition-colors focus:outline-none"
             >
+                {/* Avatar chữ cái đầu */}
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-700 flex items-center justify-center text-white font-bold text-sm select-none">
-                    {name.charAt(0)}
+                    {displayName.charAt(0).toUpperCase()}
                 </div>
                 <div className="hidden sm:block text-left">
-                    <p className="text-sm font-bold text-slate-800 leading-none">{name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{role}</p>
+                    <p className="text-sm font-bold text-slate-800 leading-none">{displayName}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{displayRole}</p>
                 </div>
                 <span className={`text-slate-400 hidden sm:block transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
                     <IconChevron />
@@ -75,11 +94,11 @@ export const AvatarDropdown = ({ name = 'Nguyễn Văn A', role = 'Người bán
                         <div className="px-4 py-3.5 border-b border-slate-100 bg-slate-50">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-700 flex items-center justify-center text-white font-extrabold">
-                                    {name.charAt(0)}
+                                    {displayName.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                    <p className="text-sm font-bold text-slate-800">{name}</p>
-                                    <p className="text-xs text-slate-400">{role}</p>
+                                    <p className="text-sm font-bold text-slate-800">{displayName}</p>
+                                    <p className="text-xs text-slate-400">{displayRole}</p>
                                 </div>
                             </div>
                         </div>
@@ -100,7 +119,7 @@ export const AvatarDropdown = ({ name = 'Nguyễn Văn A', role = 'Người bán
                                     );
                                 }
                                 return (
-                                    <button key={i} onClick={() => { setOpen(false); item.action?.(); }} className={cls}>
+                                    <button key={i} onClick={() => { item.action?.(); }} className={cls}>
                                         <span className={item.danger ? 'text-red-400' : 'text-slate-400'}>{item.icon}</span>
                                         {item.label}
                                     </button>

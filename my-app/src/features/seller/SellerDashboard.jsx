@@ -237,7 +237,7 @@ const SellerDashboard = () => {
                             <IconBell />
                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
                         </button>
-                        <AvatarDropdown name="Ngô Sỹ Giá" role="Người bán" />
+                        <AvatarDropdown />
                     </div>
                 </div>
             </header>
