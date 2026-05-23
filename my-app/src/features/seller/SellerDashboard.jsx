@@ -206,7 +206,7 @@ const SellerDashboard = () => {
             }
         };
         fetchData();
-    }, [filter, toast]);
+    }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const stats = [
         { label: 'Tổng số', value: statsData?.totalRequests || 0, color: 'text-slate-700', bg: 'bg-slate-100' },

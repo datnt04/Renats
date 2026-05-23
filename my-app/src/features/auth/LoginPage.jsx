@@ -5,18 +5,148 @@ import { ROLE_HOME } from '../../app/roleRoutes';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
+// ── Danh sách role ─────────────────────────────────────────────────────────────
+const ROLES = [
+  { key: 'SELLER',  label: 'Người bán phế liệu',  desc: 'Bán phế liệu và nhận thanh toán qua hệ thống' },
+  { key: 'DEPOT',   label: 'Điểm thu gom',         desc: 'Quản lý hoạt động thu mua và xử lý phế liệu'  },
+  { key: 'FACTORY', label: 'Nhà máy tái chế',      desc: 'Mua nguyên liệu để sản xuất và tái chế'       },
+  { key: 'DRIVER',  label: 'Tài xế vận chuyển',    desc: 'Vận chuyển hàng hóa giữa các điểm thu gom'    },
+];
+
+// ── Modal chọn role – thiết kế tối giản, chuyên nghiệp ───────────────────────
+function RolePickerModal({ providerName, onSelect, onCancel, loading }) {
+  const [selected, setSelected] = useState('');
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(15,23,42,0.5)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '16px',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: '16px',
+        padding: '36px 32px', width: '100%', maxWidth: '420px',
+        boxShadow: '0 20px 48px rgba(0,0,0,0.18)',
+        animation: 'fadeInUp 0.2s ease',
+      }}>
+        {/* Header */}
+        <div style={{ marginBottom: '28px' }}>
+          <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#111827', margin: '0 0 8px', lineHeight: 1.3 }}>
+            Chọn vai trò của bạn
+          </h3>
+          <p style={{ fontSize: '14px', color: '#6b7280', margin: 0, lineHeight: 1.5 }}>
+            Đăng nhập bằng{' '}
+            <span style={{ fontWeight: 600, color: '#374151' }}>
+              {providerName === 'google' ? 'Google' : 'Facebook'}
+            </span>
+            . Vui lòng cho biết bạn thuộc nhóm nào để hệ thống hiển thị đúng giao diện.
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: '1px', background: '#f3f4f6', marginBottom: '20px' }} />
+
+        {/* Role list – radio style */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '28px' }}>
+          {ROLES.map((r) => {
+            const isSelected = selected === r.key;
+            return (
+              <button
+                key={r.key}
+                type="button"
+                onClick={() => setSelected(r.key)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '14px',
+                  padding: '14px 16px', borderRadius: '10px', cursor: 'pointer',
+                  border: isSelected ? '1.5px solid #16a34a' : '1.5px solid #e5e7eb',
+                  background: isSelected ? '#f0fdf4' : '#fff',
+                  textAlign: 'left', transition: 'border-color 0.15s, background 0.15s',
+                }}
+              >
+                {/* Radio circle */}
+                <div style={{
+                  width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0,
+                  border: isSelected ? '6px solid #16a34a' : '2px solid #d1d5db',
+                  background: '#fff',
+                  transition: 'border 0.15s',
+                  boxSizing: 'border-box',
+                }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{
+                    margin: 0, fontSize: '15px', fontWeight: 600,
+                    color: isSelected ? '#15803d' : '#1f2937',
+                    lineHeight: 1.3,
+                  }}>
+                    {r.label}
+                  </p>
+                  <p style={{ margin: '3px 0 0', fontSize: '13px', color: '#6b7280', lineHeight: 1.4 }}>
+                    {r.desc}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            style={{
+              flex: 1, padding: '13px', borderRadius: '10px',
+              border: '1.5px solid #e5e7eb', background: '#fff',
+              color: '#374151', fontWeight: 600, fontSize: '15px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.5 : 1,
+            }}
+          >
+            Hủy bỏ
+          </button>
+          <button
+            type="button"
+            disabled={!selected || loading}
+            onClick={() => selected && onSelect(selected)}
+            style={{
+              flex: 2, padding: '13px', borderRadius: '10px', border: 'none',
+              background: selected && !loading ? '#16a34a' : '#d1d5db',
+              color: '#fff', fontWeight: 700, fontSize: '15px',
+              cursor: (!selected || loading) ? 'not-allowed' : 'pointer',
+              transition: 'background 0.15s',
+            }}
+          >
+            {loading ? 'Đang xử lý...' : 'Tiếp tục'}
+          </button>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0);    }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ── Main LoginPage ─────────────────────────────────────────────────────────────
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, loginWithGoogle, loginWithFacebook, user } = useAuth();
+  const { login, loginWithGoogle, loginWithFacebook, logout, user } = useAuth();
   const [form, setForm]         = useState({ email: '', password: '' });
   const [showPass, setShowPass] = useState(false);
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
   const [socialLoading, setSocialLoading] = useState('');
 
-  // Dùng ref để chắc chắn Google SDK chỉ init 1 lần duy nhất
+  // Pending credential chờ user chọn role
+  const [pendingSocial, setPendingSocial] = useState(null);
+  // { provider: 'google'|'facebook', credential: string }
+
   const googleInitialized = useRef(false);
-  // Ref tới div chứa nút Google ẩn – để trigger click khi bấm custom button
   const googleHiddenBtnRef = useRef(null);
 
   // Redirect nếu đã đăng nhập
@@ -24,7 +154,7 @@ export default function LoginPage() {
     if (user) navigate(ROLE_HOME[user.role] || '/', { replace: true });
   }, [user, navigate]);
 
-  // Nạp Google SDK và render nút ẩn – KHÔNG dùng prompt() để tránh FedCM
+  // Nạp Google SDK
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) return;
 
@@ -39,14 +169,9 @@ export default function LoginPage() {
         use_fedcm_for_prompt: false,
       });
 
-      // Render nút Google thật vào div ẩn
-      // Khi custom button bị click, ta sẽ trigger click vào đây
       if (googleHiddenBtnRef.current) {
         window.google.accounts.id.renderButton(googleHiddenBtnRef.current, {
-          type:  'standard',
-          size:  'large',
-          theme: 'outline',
-          width: 300,
+          type: 'standard', size: 'large', theme: 'outline', width: 300,
         });
       }
     }
@@ -65,22 +190,13 @@ export default function LoginPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Callback nhận Google credential
-  async function onGoogleCredential(response) {
-    setSocialLoading('google');
+  // ── Google callback: nhận credential → mở modal chọn role ─────────────────
+  function onGoogleCredential(response) {
     setError('');
-    try {
-      const res = await loginWithGoogle(response.credential);
-      navigate(ROLE_HOME[res.role] || '/');
-    } catch (err) {
-      setError(err.message || 'Đăng nhập Google thất bại. Vui lòng thử lại.');
-    } finally {
-      setSocialLoading('');
-    }
+    // Lưu credential tạm, hiện modal chọn role
+    setPendingSocial({ provider: 'google', credential: response.credential });
   }
 
-  // Click custom button → trigger click lên nút Google SDK ẩn bên dưới
-  // Cách này KHÔNG dùng FedCM/prompt(), Google mở popup chọn tài khoản bình thường
   const handleGoogleClick = () => {
     if (!GOOGLE_CLIENT_ID) {
       setError('Google Client ID chưa được cấu hình trong file .env');
@@ -94,34 +210,69 @@ export default function LoginPage() {
     }
   };
 
-
-
-  // Đăng nhập Facebook
+  // ── Facebook: nhận token → mở modal chọn role ─────────────────────────────
   const handleFacebookClick = () => {
     if (!window.FB) {
       setError('Facebook SDK chưa tải xong. Vui lòng thử lại sau vài giây.');
       return;
     }
-    setSocialLoading('facebook');
     setError('');
-    window.FB.login(async (fbResponse) => {
+    window.FB.login((fbResponse) => {
       if (fbResponse.authResponse) {
-        try {
-          const res = await loginWithFacebook(fbResponse.authResponse.accessToken);
-          navigate(ROLE_HOME[res.role] || '/');
-        } catch (err) {
-          setError(err.message || 'Đăng nhập Facebook thất bại. Vui lòng thử lại.');
-        } finally {
-          setSocialLoading('');
-        }
+        setPendingSocial({ provider: 'facebook', credential: fbResponse.authResponse.accessToken });
       } else {
         setError('Đã hủy đăng nhập bằng Facebook.');
-        setSocialLoading('');
       }
     }, { scope: 'email,public_profile' });
   };
 
-  // Đăng nhập truyền thống
+  // ── Sau khi chọn role trong modal → gọi API ───────────────────────────────
+  const handleRoleSelected = async (selectedRole) => {
+    if (!pendingSocial) return;
+    setSocialLoading(pendingSocial.provider);
+    setError('');
+    try {
+      let res;
+      if (pendingSocial.provider === 'google') {
+        res = await loginWithGoogle(pendingSocial.credential, selectedRole);
+      } else {
+        res = await loginWithFacebook(pendingSocial.credential, selectedRole);
+      }
+
+      const actualRole = res.role;
+
+      // Tài khoản đã tồn tại với role khác → từ chối, không cho đăng nhập
+      if (actualRole !== selectedRole) {
+        const roleLabel = {
+          SELLER:  'Người bán phế liệu',
+          DEPOT:   'Điểm thu gom',
+          FACTORY: 'Nhà máy tái chế',
+          DRIVER:  'Tài xế vận chuyển',
+          ADMIN:   'Quản trị viên',
+        };
+        // Xóa session vừa tạo để không bị auto-login
+        logout();
+        setPendingSocial(null);
+        setError(
+          `Tài khoản này đã được đăng ký với vai trò "${roleLabel[actualRole] || actualRole}". ` +
+          `Vui lòng chọn đúng vai trò để tiếp tục.`
+        );
+        return;
+      }
+
+      // Role khớp → đăng nhập thành công
+      setPendingSocial(null);
+      navigate(ROLE_HOME[selectedRole] || '/');
+
+    } catch (err) {
+      setError(err.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+      setPendingSocial(null);
+    } finally {
+      setSocialLoading('');
+    }
+  };
+
+  // ── Đăng nhập truyền thống ────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -151,6 +302,16 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex font-sans">
 
+      {/* Modal chọn role */}
+      {pendingSocial && (
+        <RolePickerModal
+          providerName={pendingSocial.provider}
+          loading={!!socialLoading}
+          onSelect={handleRoleSelected}
+          onCancel={() => { setPendingSocial(null); setSocialLoading(''); }}
+        />
+      )}
+
       {/* ── LEFT PANEL ──────────────────────────────────────────────────────── */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 relative overflow-hidden"
         style={{ background: 'linear-gradient(135deg, #0f1f14 0%, #1a3a22 50%, #0d2b1a 100%)' }}>
@@ -177,11 +338,11 @@ export default function LoginPage() {
           <div className="space-y-2">
             <p className="text-green-400 text-xs font-semibold uppercase tracking-widest mb-3">Hệ thống phục vụ</p>
             {[
-              { label: 'Nhà máy tái chế', color: '#22c55e' },
-              { label: 'Điểm thu gom',    color: '#0ea5e9' },
-              { label: 'Tài xế vận chuyển', color: '#f97316' },
-              { label: 'Người bán phế liệu', color: '#a78bfa' },
-              { label: 'Quản trị viên',   color: '#fb7185' },
+              { label: 'Nhà máy tái chế',     color: '#22c55e' },
+              { label: 'Điểm thu gom',         color: '#0ea5e9' },
+              { label: 'Tài xế vận chuyển',    color: '#f97316' },
+              { label: 'Người bán phế liệu',   color: '#a78bfa' },
+              { label: 'Quản trị viên',        color: '#fb7185' },
             ].map((r) => (
               <div key={r.label} className="flex items-center gap-3 opacity-80">
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: r.color }} />
@@ -220,21 +381,21 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Div ẩn – Google SDK render nút thật vào đây, custom button sẽ trigger click nó */}
+          {/* Div ẩn – Google SDK render nút thật */}
           <div
             ref={googleHiddenBtnRef}
             aria-hidden="true"
             style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 1, height: 1, overflow: 'hidden' }}
           />
 
-          {/* ── Social Login: Google + Facebook cạnh nhau, bằng nhau ──────── */}
+          {/* ── Social Login ──────────────────────────────────────────────── */}
           <div className="flex gap-3 mb-6">
 
             {/* Nút Google */}
             <button
               id="login-google"
               type="button"
-              disabled={!!socialLoading || loading}
+              disabled={!!socialLoading || loading || !!pendingSocial}
               onClick={handleGoogleClick}
               className="flex-1 py-2.5 rounded-xl text-sm font-medium text-gray-700 flex items-center justify-center gap-2 transition-all"
               style={{
@@ -266,7 +427,7 @@ export default function LoginPage() {
             <button
               id="login-facebook"
               type="button"
-              disabled={!!socialLoading || loading}
+              disabled={!!socialLoading || loading || !!pendingSocial}
               onClick={handleFacebookClick}
               className="flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-all"
               style={{
@@ -293,7 +454,6 @@ export default function LoginPage() {
             </button>
           </div>
 
-
           {/* Divider */}
           <div className="mb-6 flex items-center gap-3">
             <div className="flex-1 h-px bg-gray-200" />
@@ -301,7 +461,7 @@ export default function LoginPage() {
             <div className="flex-1 h-px bg-gray-200" />
           </div>
 
-          {/* ── Email / Password Form ────────────────────────────────────── */}
+          {/* ── Email / Password Form ─────────────────────────────────────── */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
