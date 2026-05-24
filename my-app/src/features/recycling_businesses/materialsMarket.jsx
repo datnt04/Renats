@@ -1,8 +1,108 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import HeaderDoanhNghiep from '../../components/layout/header_doanhNghiep/headerDoanhNghiep';
+import { factoryService } from '../../services/factoryService';
+import { useToast } from '../../context/ToastContext';
 
 const MaterialsMarket = () => {
+    const toast = useToast();
+    const [batches, setBatches] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [premiumInfo, setPremiumInfo] = useState({ isPremium: false, expiresAt: null });
+    const [activeFilter, setActiveFilter] = useState('ALL');
+
+    useEffect(() => {
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                // Fetch listed batches
+                const batchRes = await factoryService.getBatches();
+                setBatches(batchRes.data || []);
+
+                // Fetch premium status
+                const premiumRes = await factoryService.getPremiumStatus();
+                setPremiumInfo(premiumRes);
+            } catch (err) {
+                console.error('Error fetching market data:', err);
+                toast.error('Không thể kết nối máy chủ. Đang hiển thị dữ liệu mô phỏng!');
+                // Fallback mock data if server is down or database empty
+                setBatches([
+                    {
+                        id: '00000000-0000-0000-0000-000000000101',
+                        batchCode: 'BATCH-8821',
+                        materialType: 'CARDBOARD',
+                        estimatedWeightKg: 12500,
+                        unitPrice: 3200,
+                        moisturePercentage: 11.5,
+                        purityPercentage: 98.0,
+                        description: 'Giấy carton hỗn hợp ép kiện chất lượng cao, độ ẩm thấp, sạch tạp chất.',
+                        thumbnailImageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAtQo_BXLTCb7oQmjrGu166gQf9vcKoMtG_l_vj0srHle8_RiRGoVAD3an26lfGqWsNUxx2K3CiVIqs8GCKXlorB5u380ylN_YH34MZDNqffezCHv2sS-2Bya07Wq6nlhdO_d68qoJG7YW53ctPoD-KT2AqZjmyiWNH1NWMqaM6P380hKnHvhyYTbSyFyBNCuZBSnuR_Xc0BH23J8N4zvVHs9SnSZ1HuNzTpmbB1QD-hRkkbwrflSXjqRYZser0-Jcdb-PIgDBoEcU',
+                        depot: {
+                            companyName: 'Vựa Phế Liệu Minh Khôi',
+                            city: 'Quận 9, TP.HCM',
+                            reputationScore: 98,
+                        }
+                    },
+                    {
+                        id: '00000000-0000-0000-0000-000000000102',
+                        batchCode: 'BATCH-8822',
+                        materialType: 'HDPE',
+                        estimatedWeightKg: 8400,
+                        unitPrice: 15000,
+                        moisturePercentage: 1.2,
+                        purityPercentage: 95.0,
+                        description: 'Nhựa HDPE ép kiện chuyên dụng cho tái chế, đã phân loại kỹ.',
+                        thumbnailImageUrl: '',
+                        depot: {
+                            companyName: 'Đại Lý Thu Gom Thành Đạt',
+                            city: 'Thủ Đức, TP.HCM',
+                            reputationScore: 75,
+                        }
+                    },
+                    {
+                        id: '00000000-0000-0000-0000-000000000103',
+                        batchCode: 'BATCH-8823',
+                        materialType: 'IRON',
+                        estimatedWeightKg: 45000,
+                        unitPrice: 12000,
+                        moisturePercentage: 0.5,
+                        purityPercentage: 92.0,
+                        description: 'Sắt vụn, sắt xà gồ tháo dỡ công trình, không dính bê tông.',
+                        thumbnailImageUrl: '',
+                        depot: {
+                            companyName: 'Công Ty Môi Trường Xanh',
+                            city: 'Bình Thạnh, TP.HCM',
+                            reputationScore: 92,
+                        }
+                    }
+                ]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, [toast]);
+
+    // Local filter function
+    const getFilteredBatches = () => {
+        if (activeFilter === 'ALL') return batches;
+        return batches.filter(b => {
+            const mat = b.materialType.toUpperCase();
+            if (activeFilter === 'PAPER') {
+                return mat === 'PAPER' || mat === 'CARDBOARD';
+            }
+            if (activeFilter === 'PLASTIC') {
+                return mat === 'PET' || mat === 'HDPE' || mat === 'PVC';
+            }
+            if (activeFilter === 'METAL') {
+                return mat === 'ALUMINUM' || mat === 'IRON' || mat === 'STEEL' || mat === 'COPPER';
+            }
+            return true;
+        });
+    };
+
+    const filteredBatches = getFilteredBatches();
+
     return (
         <div className="font-sans text-slate-900 overflow-x-hidden bg-slate-50 min-h-screen flex flex-col">
             {/* Header dùng chung */}
@@ -12,30 +112,44 @@ const MaterialsMarket = () => {
             <section className="py-10 flex-grow">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     {/* Marketplace Controls */}
-                    <div
-                        className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
                         <div className="flex items-center gap-4 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
                             <h1 className="text-2xl font-extrabold text-slate-800 whitespace-nowrap mr-4">Chợ Nguyên Liệu</h1>
                             <div className="flex gap-2">
                                 <button
-                                    className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-semibold hover:bg-slate-200 flex items-center gap-2 whitespace-nowrap">
-                                    <span className="material-symbols-outlined text-lg">filter_list</span> Bộ lọc
-                                </button>
-                                <div className="h-9 w-px bg-slate-200 mx-1"></div>
-                                <button
-                                    className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold shadow-md flex items-center gap-2 whitespace-nowrap">
+                                    onClick={() => setActiveFilter('ALL')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 whitespace-nowrap transition-all ${
+                                        activeFilter === 'ALL'
+                                            ? 'bg-primary text-white shadow-md'
+                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}>
                                     <span className="material-symbols-outlined text-lg">recycling</span> Tất cả
                                 </button>
                                 <button
-                                    className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:border-primary hover:text-primary flex items-center gap-2 whitespace-nowrap transition-colors">
+                                    onClick={() => setActiveFilter('PAPER')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 whitespace-nowrap transition-all border ${
+                                        activeFilter === 'PAPER'
+                                            ? 'bg-primary text-white border-primary shadow-md'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:border-primary hover:text-primary'
+                                    }`}>
                                     <span className="material-symbols-outlined text-lg">description</span> Giấy
                                 </button>
                                 <button
-                                    className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:border-primary hover:text-primary flex items-center gap-2 whitespace-nowrap transition-colors">
+                                    onClick={() => setActiveFilter('PLASTIC')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 whitespace-nowrap transition-all border ${
+                                        activeFilter === 'PLASTIC'
+                                            ? 'bg-primary text-white border-primary shadow-md'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:border-primary hover:text-primary'
+                                    }`}>
                                     <span className="material-symbols-outlined text-lg">water_drop</span> Nhựa
                                 </button>
                                 <button
-                                    className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-semibold hover:border-primary hover:text-primary flex items-center gap-2 whitespace-nowrap transition-colors">
+                                    onClick={() => setActiveFilter('METAL')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 whitespace-nowrap transition-all border ${
+                                        activeFilter === 'METAL'
+                                            ? 'bg-primary text-white border-primary shadow-md'
+                                            : 'bg-white border-slate-200 text-slate-600 hover:border-primary hover:text-primary'
+                                    }`}>
                                     <span className="material-symbols-outlined text-lg">build</span> Kim loại
                                 </button>
                             </div>
@@ -53,410 +167,135 @@ const MaterialsMarket = () => {
                         </div>
                     </div>
 
+                    {/* Active Premium Tag */}
+                    {premiumInfo.isPremium && (
+                        <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl p-4 mb-6 flex items-center gap-3">
+                            <span className="material-symbols-outlined text-emerald-600 text-2xl">workspace_premium</span>
+                            <div>
+                                <p className="text-sm font-extrabold text-emerald-800">Đã kích hoạt Chế độ Premium</p>
+                                <p className="text-xs text-emerald-600 mt-0.5">Tự động mở khóa toàn bộ lịch sử giao dịch và điểm kiểm định chất lượng của đối tác vựa.</p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Cards Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {/* Card 1 */}
-                        <div
-                            className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-primary/30 transition-all duration-300 overflow-hidden flex flex-col">
-                            <div className="p-6 pb-4">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div
-                                        className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">description</span> Giấy Carton
-                                    </div>
-                                    <div className="text-slate-400 text-sm flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">near_me</span> 5.2 km
-                                    </div>
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-1">Vựa Phế Liệu Minh Khôi</h3>
-                                <div className="flex items-center gap-2 mb-4">
-                                    <span className="text-slate-500 text-sm">Quận 9, TP.HCM</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div className="bg-slate-50 p-3 rounded-xl">
-                                        <p className="text-xs text-slate-500 font-medium uppercase mb-1">Khối lượng</p>
-                                        <p className="text-2xl font-extrabold text-slate-800">12.5 <span
-                                            className="text-sm font-semibold text-slate-500">Tấn</span></p>
-                                    </div>
-                                    <div className="bg-green-50 p-3 rounded-xl border border-green-100 relative group">
-                                        <p className="text-xs text-green-700 font-medium uppercase mb-1">Điểm uy tín</p>
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-2xl font-extrabold text-green-700">98</span>
-                                            <span className="text-xs font-bold text-green-600">/100</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="relative bg-slate-50 border-t border-slate-100 flex-grow">
-                                <div className="p-4 opacity-40 filter blur-[2px] select-none pointer-events-none">
-                                    <p className="text-xs font-bold text-slate-400 uppercase mb-3">Lịch sử 10 chuyến gần nhất</p>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm"><span>12/05/2024</span> <span
-                                            className="text-green-600 font-bold">Thành công</span></div>
-                                        <div className="flex justify-between text-sm"><span>10/05/2024</span> <span
-                                            className="text-green-600 font-bold">Thành công</span></div>
-                                        <div className="flex justify-between text-sm"><span>08/05/2024</span> <span
-                                            className="text-green-600 font-bold">Thành công</span></div>
-                                    </div>
-                                </div>
-                                <div
-                                    className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm z-10 p-4 text-center">
-                                    <div className="bg-white p-3 rounded-full shadow-md mb-2">
-                                        <span className="material-symbols-outlined text-primary text-2xl">lock</span>
-                                    </div>
-                                    <p className="text-sm font-semibold text-slate-700 mb-3">Xem lịch sử giao dịch chi tiết</p>
-                                    <Link
-                                        to="/recycle/market-premium"
-                                        className="bg-primary hover:bg-secondary text-white text-sm font-bold py-2 px-6 rounded-lg shadow-lg shadow-green-200 transition-all flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-lg">verified</span> Nâng cấp Premium
-                                    </Link>
-                                </div>
-                            </div>
-                            <div className="p-4 border-t border-slate-100 bg-white z-20">
-                                <Link
-                                    to="/recycle/order-confirm"
-                                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
-                                    <span className="material-symbols-outlined">shopping_cart_checkout</span>
-                                    Chốt đơn / Đặt mua
-                                </Link>
-                            </div>
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-4">
+                            <span className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></span>
+                            <p className="text-slate-500 font-medium">Đang tải dữ liệu chợ nguyên liệu...</p>
                         </div>
+                    ) : filteredBatches.length === 0 ? (
+                        <div className="text-center bg-white rounded-2xl p-16 border border-slate-100 shadow-sm">
+                            <p className="text-5xl mb-4">📦</p>
+                            <p className="font-extrabold text-slate-700 text-lg">Không tìm thấy lô hàng nào</p>
+                            <p className="text-sm text-slate-400 mt-1">Chưa có vựa nào đăng tin xuất hàng thuộc bộ lọc này.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredBatches.map((b) => {
+                                const isPremium = premiumInfo.isPremium;
+                                const formattedWeight = (b.estimatedWeightKg / 1000).toFixed(1);
+                                
+                                // Material badges HSL
+                                let badgeClass = "bg-orange-50 text-orange-700";
+                                let badgeIcon = "description";
+                                let label = "Giấy";
 
-                        {/* Card 2 */}
-                        <div
-                            className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-primary/30 transition-all duration-300 overflow-hidden flex flex-col">
-                            <div className="p-6 pb-4">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div
-                                        className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">water_drop</span> Nhựa HDPE
-                                    </div>
-                                    <div className="text-slate-400 text-sm flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">near_me</span> 12.8 km
-                                    </div>
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-1">Đại Lý Thu Gom Thành Đạt</h3>
-                                <div className="flex items-center gap-2 mb-4">
-                                    <span className="text-slate-500 text-sm">Thủ Đức, TP.HCM</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div className="bg-slate-50 p-3 rounded-xl">
-                                        <p className="text-xs text-slate-500 font-medium uppercase mb-1">Khối lượng</p>
-                                        <p className="text-2xl font-extrabold text-slate-800">8.4 <span
-                                            className="text-sm font-semibold text-slate-500">Tấn</span></p>
-                                    </div>
-                                    <div className="bg-yellow-50 p-3 rounded-xl border border-yellow-100 relative group">
-                                        <p className="text-xs text-yellow-700 font-medium uppercase mb-1">Điểm uy tín</p>
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-2xl font-extrabold text-yellow-600">75</span>
-                                            <span className="text-xs font-bold text-yellow-600">/100</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="relative bg-slate-50 border-t border-slate-100 flex-grow">
-                                <div className="p-4 opacity-40 filter blur-[2px] select-none pointer-events-none">
-                                    <p className="text-xs font-bold text-slate-400 uppercase mb-3">Lịch sử 10 chuyến gần nhất</p>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm"><span>12/05/2024</span> <span
-                                            className="text-green-600 font-bold">Thành công</span></div>
-                                        <div className="flex justify-between text-sm"><span>...</span> <span>...</span></div>
-                                    </div>
-                                </div>
-                                <div
-                                    className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm z-10 p-4 text-center">
-                                    <div className="bg-white p-3 rounded-full shadow-md mb-2">
-                                        <span className="material-symbols-outlined text-primary text-2xl">lock</span>
-                                    </div>
-                                    <p className="text-sm font-semibold text-slate-700 mb-3">Xem lịch sử giao dịch chi tiết</p>
-                                    <Link
-                                        to="/recycle/market-premium"
-                                        className="bg-primary hover:bg-secondary text-white text-sm font-bold py-2 px-6 rounded-lg shadow-lg shadow-green-200 transition-all flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-lg">verified</span> Nâng cấp Premium
-                                    </Link>
-                                </div>
-                            </div>
-                            <div className="p-4 border-t border-slate-100 bg-white z-20">
-                                <Link
-                                    to="/recycle/order-confirm"
-                                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
-                                    <span className="material-symbols-outlined">shopping_cart_checkout</span>
-                                    Chốt đơn / Đặt mua
-                                </Link>
-                            </div>
-                        </div>
+                                const mType = b.materialType.toUpperCase();
+                                if (mType.includes('PET') || mType.includes('HDPE') || mType.includes('PVC') || mType.includes('PLASTIC')) {
+                                    badgeClass = "bg-blue-50 text-blue-700";
+                                    badgeIcon = "water_drop";
+                                    label = `Nhựa ${b.materialType}`;
+                                } else if (mType.includes('ALUMINUM') || mType.includes('IRON') || mType.includes('STEEL') || mType.includes('COPPER') || mType.includes('METAL')) {
+                                    badgeClass = "bg-purple-50 text-purple-700";
+                                    badgeIcon = "build";
+                                    label = `Kim loại ${b.materialType}`;
+                                } else {
+                                    label = `Giấy ${b.materialType}`;
+                                }
 
-                        {/* Card 3 */}
-                        <div
-                            className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-primary/30 transition-all duration-300 overflow-hidden flex flex-col">
-                            <div className="p-6 pb-4">
-                                <div className="flex justify-between items-start mb-4">
+                                return (
                                     <div
-                                        className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">build</span> Sắt Vụn
-                                    </div>
-                                    <div className="text-slate-400 text-sm flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">near_me</span> 2.1 km
-                                    </div>
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-1">Công Ty Môi Trường Xanh</h3>
-                                <div className="flex items-center gap-2 mb-4">
-                                    <span className="text-slate-500 text-sm">Bình Thạnh, TP.HCM</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div className="bg-slate-50 p-3 rounded-xl">
-                                        <p className="text-xs text-slate-500 font-medium uppercase mb-1">Khối lượng</p>
-                                        <p className="text-2xl font-extrabold text-slate-800">45.0 <span
-                                            className="text-sm font-semibold text-slate-500">Tấn</span></p>
-                                    </div>
-                                    <div className="bg-green-50 p-3 rounded-xl border border-green-100 relative group">
-                                        <p className="text-xs text-green-700 font-medium uppercase mb-1">Điểm uy tín</p>
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-2xl font-extrabold text-green-700">92</span>
-                                            <span className="text-xs font-bold text-green-600">/100</span>
+                                        key={b.id}
+                                        className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-primary/30 transition-all duration-300 overflow-hidden flex flex-col">
+                                        <div className="p-6 pb-4">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div
+                                                    className={`${badgeClass} px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1`}>
+                                                    <span className="material-symbols-outlined text-sm">{badgeIcon}</span> {label}
+                                                </div>
+                                                <div className="text-slate-400 text-sm flex items-center gap-1">
+                                                    <span className="material-symbols-outlined text-sm">schedule</span> #{b.batchCode}
+                                                </div>
+                                            </div>
+                                            <h3 className="text-xl font-bold text-slate-900 mb-1">{b.depot.companyName}</h3>
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <span className="text-slate-500 text-sm">{b.depot.city || 'Việt Nam'}</span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                                <div className="bg-slate-50 p-3 rounded-xl">
+                                                    <p className="text-xs text-slate-500 font-medium uppercase mb-1">Khối lượng</p>
+                                                    <p className="text-2xl font-extrabold text-slate-800">{formattedWeight} <span
+                                                        className="text-sm font-semibold text-slate-500">Tấn</span></p>
+                                                </div>
+                                                <div className="bg-green-50 p-3 rounded-xl border border-green-100 relative group">
+                                                    <p className="text-xs text-green-700 font-medium uppercase mb-1">Điểm uy tín</p>
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="text-2xl font-extrabold text-green-700">{b.depot.reputationScore}</span>
+                                                        <span className="text-xs font-bold text-green-600">/100</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Premium History Check */}
+                                        <div className="relative bg-slate-50 border-t border-slate-100 flex-grow">
+                                            <div className={`p-4 transition-all duration-300 ${!isPremium ? 'opacity-40 filter blur-[2px] select-none pointer-events-none' : ''}`}>
+                                                <p className="text-xs font-bold text-slate-400 uppercase mb-3">Lịch sử 3 chuyến gần nhất</p>
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between text-sm">
+                                                        <span>20/05/2026</span> 
+                                                        <span className="text-green-600 font-bold">Thành công (Tạp chất 2.1%)</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-sm">
+                                                        <span>18/05/2026</span> 
+                                                        <span className="text-green-600 font-bold">Thành công (Tạp chất 1.8%)</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-sm">
+                                                        <span>15/05/2026</span> 
+                                                        <span className="text-green-600 font-bold">Thành công (Tạp chất 3.0%)</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            {!isPremium && (
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm z-10 p-4 text-center">
+                                                    <div className="bg-white p-3 rounded-full shadow-md mb-2">
+                                                        <span className="material-symbols-outlined text-primary text-2xl">lock</span>
+                                                    </div>
+                                                    <p className="text-sm font-semibold text-slate-700 mb-3">Xem lịch sử giao dịch & KCS chi tiết</p>
+                                                    <Link
+                                                        to="/nha-may/premium"
+                                                        className="bg-primary hover:bg-secondary text-white text-xs font-bold py-2 px-4 rounded-lg shadow-lg shadow-green-200 transition-all flex items-center gap-2">
+                                                        <span className="material-symbols-outlined text-sm">verified</span> Nâng cấp Premium
+                                                    </Link>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="p-4 border-t border-slate-100 bg-white z-20">
+                                            <Link
+                                                to={`/recycle/order-confirm?batchId=${b.id}`}
+                                                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
+                                                <span className="material-symbols-outlined">shopping_cart_checkout</span>
+                                                Chốt đơn / Đặt mua
+                                            </Link>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-                            <div className="relative bg-slate-50 border-t border-slate-100 flex-grow">
-                                <div className="p-4 opacity-40 filter blur-[2px] select-none pointer-events-none">
-                                    <p className="text-xs font-bold text-slate-400 uppercase mb-3">Lịch sử 10 chuyến gần nhất</p>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm"><span>12/05/2024</span> <span
-                                            className="text-green-600 font-bold">Thành công</span></div>
-                                        <div className="flex justify-between text-sm"><span>...</span> <span>...</span></div>
-                                    </div>
-                                </div>
-                                <div
-                                    className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm z-10 p-4 text-center">
-                                    <div className="bg-white p-3 rounded-full shadow-md mb-2">
-                                        <span className="material-symbols-outlined text-primary text-2xl">lock</span>
-                                    </div>
-                                    <p className="text-sm font-semibold text-slate-700 mb-3">Xem lịch sử giao dịch chi tiết</p>
-                                    <Link
-                                        to="/recycle/market-premium"
-                                        className="bg-primary hover:bg-secondary text-white text-sm font-bold py-2 px-6 rounded-lg shadow-lg shadow-green-200 transition-all flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-lg">verified</span> Nâng cấp Premium
-                                    </Link>
-                                </div>
-                            </div>
-                            <div className="p-4 border-t border-slate-100 bg-white z-20">
-                                <Link
-                                    to="/recycle/order-confirm"
-                                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
-                                    <span className="material-symbols-outlined">shopping_cart_checkout</span>
-                                    Chốt đơn / Đặt mua
-                                </Link>
-                            </div>
+                                );
+                            })}
                         </div>
-
-                        {/* Card 4 - Premium Locked */}
-                        <div
-                            className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-primary/30 transition-all duration-300 overflow-hidden flex flex-col">
-                            <div className="p-6 pb-4">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div
-                                        className="bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">description</span> Giấy Tạp
-                                    </div>
-                                    <div className="text-slate-400 text-sm flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">near_me</span> 8.5 km
-                                    </div>
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-1">Vựa Thu Gom Bình An</h3>
-                                <div className="flex items-center gap-2 mb-4">
-                                    <span className="text-slate-500 text-sm">Quận 7, TP.HCM</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div className="bg-slate-50 p-3 rounded-xl">
-                                        <p className="text-xs text-slate-500 font-medium uppercase mb-1">Khối lượng</p>
-                                        <p className="text-2xl font-extrabold text-slate-800">5.0 <span
-                                            className="text-sm font-semibold text-slate-500">Tấn</span></p>
-                                    </div>
-                                    <div className="bg-slate-100 p-3 rounded-xl border border-slate-200 relative overflow-hidden group">
-                                        <p className="text-xs text-slate-500 font-medium uppercase mb-1">Điểm uy tín</p>
-                                        <div className="flex items-center gap-1 opacity-0">
-                                            <span className="text-2xl font-extrabold">00</span>
-                                            <span className="text-xs font-bold">/100</span>
-                                        </div>
-                                        <div
-                                            className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/95 z-10 px-2 text-center">
-                                            <span className="material-symbols-outlined text-white/90 text-2xl mb-1">lock</span>
-                                            <span className="text-[10px] uppercase font-bold text-white tracking-wider">Chỉ dành cho Premium</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="relative bg-slate-50 border-t border-slate-100 flex-grow">
-                                <div className="p-4 opacity-40 filter blur-[2px] select-none pointer-events-none">
-                                    <p className="text-xs font-bold text-slate-400 uppercase mb-3">Lịch sử 10 chuyến gần nhất</p>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm"><span>12/05/2024</span> <span
-                                            className="text-green-600 font-bold">Thành công</span></div>
-                                        <div className="flex justify-between text-sm"><span>...</span> <span>...</span></div>
-                                    </div>
-                                </div>
-                                <div
-                                    className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm z-10 p-4 text-center">
-                                    <div className="bg-white p-3 rounded-full shadow-md mb-2">
-                                        <span className="material-symbols-outlined text-primary text-2xl">lock</span>
-                                    </div>
-                                    <p className="text-sm font-semibold text-slate-700 mb-3">Xem lịch sử giao dịch chi tiết</p>
-                                    <Link
-                                        to="/recycle/market-premium"
-                                        className="bg-primary hover:bg-secondary text-white text-sm font-bold py-2 px-6 rounded-lg shadow-lg shadow-green-200 transition-all flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-lg">verified</span> Nâng cấp Premium
-                                    </Link>
-                                </div>
-                            </div>
-                            <div className="p-4 border-t border-slate-100 bg-white z-20">
-                                <Link
-                                    to="/recycle/order-confirm"
-                                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
-                                    <span className="material-symbols-outlined">shopping_cart_checkout</span>
-                                    Chốt đơn / Đặt mua
-                                </Link>
-                            </div>
-                        </div>
-
-                        {/* Card 5 - Premium Locked */}
-                        <div
-                            className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-primary/30 transition-all duration-300 overflow-hidden flex flex-col">
-                            <div className="p-6 pb-4">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div
-                                        className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">build</span> Nhôm Cán
-                                    </div>
-                                    <div className="text-slate-400 text-sm flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">near_me</span> 15 km
-                                    </div>
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-1">Cơ Sở Phế Liệu Phương Nam</h3>
-                                <div className="flex items-center gap-2 mb-4">
-                                    <span className="text-slate-500 text-sm">Bình Dương</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div className="bg-slate-50 p-3 rounded-xl">
-                                        <p className="text-xs text-slate-500 font-medium uppercase mb-1">Khối lượng</p>
-                                        <p className="text-2xl font-extrabold text-slate-800">18.2 <span
-                                            className="text-sm font-semibold text-slate-500">Tấn</span></p>
-                                    </div>
-                                    <div className="bg-slate-100 p-3 rounded-xl border border-slate-200 relative overflow-hidden group">
-                                        <p className="text-xs text-slate-500 font-medium uppercase mb-1">Điểm uy tín</p>
-                                        <div className="flex items-center gap-1 opacity-0">
-                                            <span className="text-2xl font-extrabold">00</span>
-                                            <span className="text-xs font-bold">/100</span>
-                                        </div>
-                                        <div
-                                            className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/95 z-10 px-2 text-center">
-                                            <span className="material-symbols-outlined text-white/90 text-2xl mb-1">lock</span>
-                                            <span className="text-[10px] uppercase font-bold text-white tracking-wider">Chỉ dành cho Premium</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="relative bg-slate-50 border-t border-slate-100 flex-grow">
-                                <div className="p-4 opacity-40 filter blur-[2px] select-none pointer-events-none">
-                                    <p className="text-xs font-bold text-slate-400 uppercase mb-3">Lịch sử 10 chuyến gần nhất</p>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm"><span>12/05/2024</span> <span
-                                            className="text-green-600 font-bold">Thành công</span></div>
-                                        <div className="flex justify-between text-sm"><span>...</span> <span>...</span></div>
-                                    </div>
-                                </div>
-                                <div
-                                    className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm z-10 p-4 text-center">
-                                    <div className="bg-white p-3 rounded-full shadow-md mb-2">
-                                        <span className="material-symbols-outlined text-primary text-2xl">lock</span>
-                                    </div>
-                                    <p className="text-sm font-semibold text-slate-700 mb-3">Xem lịch sử giao dịch chi tiết</p>
-                                    <Link
-                                        to="/recycle/market-premium"
-                                        className="bg-primary hover:bg-secondary text-white text-sm font-bold py-2 px-6 rounded-lg shadow-lg shadow-green-200 transition-all flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-lg">verified</span> Nâng cấp Premium
-                                    </Link>
-                                </div>
-                            </div>
-                            <div className="p-4 border-t border-slate-100 bg-white z-20">
-                                <Link
-                                    to="/recycle/order-confirm"
-                                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
-                                    <span className="material-symbols-outlined">shopping_cart_checkout</span>
-                                    Chốt đơn / Đặt mua
-                                </Link>
-                            </div>
-                        </div>
-
-                        {/* Card 6 - Premium Locked */}
-                        <div
-                            className="bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-lg hover:border-primary/30 transition-all duration-300 overflow-hidden flex flex-col">
-                            <div className="p-6 pb-4">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div
-                                        className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">water_drop</span> Nhựa PET
-                                    </div>
-                                    <div className="text-slate-400 text-sm flex items-center gap-1">
-                                        <span className="material-symbols-outlined text-sm">near_me</span> 3.4 km
-                                    </div>
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-1">Vựa Ve Chai Cô Tư</h3>
-                                <div className="flex items-center gap-2 mb-4">
-                                    <span className="text-slate-500 text-sm">Gò Vấp, TP.HCM</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                    <div className="bg-slate-50 p-3 rounded-xl">
-                                        <p className="text-xs text-slate-500 font-medium uppercase mb-1">Khối lượng</p>
-                                        <p className="text-2xl font-extrabold text-slate-800">2.5 <span
-                                            className="text-sm font-semibold text-slate-500">Tấn</span></p>
-                                    </div>
-                                    <div className="bg-slate-100 p-3 rounded-xl border border-slate-200 relative overflow-hidden group">
-                                        <p className="text-xs text-slate-500 font-medium uppercase mb-1">Điểm uy tín</p>
-                                        <div className="flex items-center gap-1 opacity-0">
-                                            <span className="text-2xl font-extrabold">00</span>
-                                            <span className="text-xs font-bold">/100</span>
-                                        </div>
-                                        <div
-                                            className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/95 z-10 px-2 text-center">
-                                            <span className="material-symbols-outlined text-white/90 text-2xl mb-1">lock</span>
-                                            <span className="text-[10px] uppercase font-bold text-white tracking-wider">Chỉ dành cho Premium</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="relative bg-slate-50 border-t border-slate-100 flex-grow">
-                                <div className="p-4 opacity-40 filter blur-[2px] select-none pointer-events-none">
-                                    <p className="text-xs font-bold text-slate-400 uppercase mb-3">Lịch sử 10 chuyến gần nhất</p>
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between text-sm"><span>12/05/2024</span> <span
-                                            className="text-green-600 font-bold">Thành công</span></div>
-                                        <div className="flex justify-between text-sm"><span>...</span> <span>...</span></div>
-                                    </div>
-                                </div>
-                                <div
-                                    className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm z-10 p-4 text-center">
-                                    <div className="bg-white p-3 rounded-full shadow-md mb-2">
-                                        <span className="material-symbols-outlined text-primary text-2xl">lock</span>
-                                    </div>
-                                    <p className="text-sm font-semibold text-slate-700 mb-3">Xem lịch sử giao dịch chi tiết</p>
-                                    <Link
-                                        to="/recycle/market-premium"
-                                        className="bg-primary hover:bg-secondary text-white text-sm font-bold py-2 px-6 rounded-lg shadow-lg shadow-green-200 transition-all flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-lg">verified</span> Nâng cấp Premium
-                                    </Link>
-                                </div>
-                            </div>
-                            <div className="p-4 border-t border-slate-100 bg-white z-20">
-                                <Link
-                                    to="/recycle/order-confirm"
-                                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
-                                    <span className="material-symbols-outlined">shopping_cart_checkout</span>
-                                    Chốt đơn / Đặt mua
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </section>
         </div>
@@ -464,3 +303,4 @@ const MaterialsMarket = () => {
 };
 
 export default MaterialsMarket;
+

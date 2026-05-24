@@ -1,62 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import HeaderDoanhNghiep from '../../components/layout/header_doanhNghiep/headerDoanhNghiep';
+import { useNavigate, Link } from 'react-router-dom';
+import { factoryService } from '../../services/factoryService';
 
 const InforPartnerVip = () => {
+    const navigate = useNavigate();
+    const [isPremium, setIsPremium] = useState(false);
+
+    useEffect(() => {
+        factoryService.getPremiumStatus()
+            .then(res => setIsPremium(res?.isPremium || false))
+            .catch(() => setIsPremium(false));
+    }, []);
+
     return (
         <div className="font-sans text-slate-900 bg-slate-50 overflow-x-hidden min-h-screen flex flex-col">
 
-            {/* Header */}
-            <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center gap-4">
-                            <img
-                                alt="Re-Nats Logo"
-                                className="w-auto h-12 object-contain"
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDK91fcaHmansgwcmixnPW2Kj6N96BE_TB3pFnlNc65ME78ARU4vT0E3i8Kg6UL1wU_n4_Jer0PoE7HlEYEUJK1ZPO35sLjnBf4WilVM4X6DdRfRJrMK2Jhdz9VEJChq0rMRTLR5lKyAy_zh0owPeKq2Z5cJ51_D_2Ti9RvtVlyuvFAgvgCW9gJ0gxogd3eKqpxFUbCIE5NBkhPl6yAB78IAUV21kEKZNKfRmUUv-2yBO5zvsteDFlVgfwFKyCe7u0Aj2jRGz1ZcZk"
-                            />
-                            <div className="hidden md:block h-6 w-px bg-slate-300"></div>
-                            <span className="text-slate-500 font-medium text-sm hidden md:block">Quản lý Đối tác &amp; Nhà cung cấp</span>
-                        </div>
-                        <div className="flex items-center gap-6">
-                            <div className="relative hidden sm:block">
-                                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span className="material-symbols-outlined text-slate-400 text-xl">search</span>
-                                </span>
-                                <input
-                                    className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-64"
-                                    placeholder="Tìm kiếm đối tác..."
-                                    type="text"
-                                />
-                            </div>
-                            <button className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors">
-                                <span className="material-symbols-outlined">notifications</span>
-                            </button>
-                            <div className="flex items-center gap-3 pl-6 border-l border-slate-200">
-                                <div className="text-right hidden sm:block">
-                                    <p className="text-sm font-bold text-slate-700">Nguyễn Văn A</p>
-                                    <p className="text-xs text-slate-500">Quản lý nhà máy</p>
-                                </div>
-                                <div className="h-10 w-10 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
-                                    <img
-                                        alt="User Avatar"
-                                        className="w-full h-full object-cover"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaOCJwjx5wu3GBVvPbHGqRWTMvqp2cVmKcT3ZJXTmEXviBbRz6psQfBkbZ9ADlhfUbC73qaF7xnmSpF-3MO2fvGDqzDurffZe_bE8je3JtW6kR2CsjeeNIytNJKPKzgd58IQYGRoEwxNLbUjuRpAL7l4bfdO0HZ81BzZh_NAnl8qo0xrVzU0JEAypiGXsnHkdrYJYEYi99QCQJ-P2Hrde_FzoqRQDpuZUep0kuuJy_IZ83Cjulj1wZi4Vq4VuVcRMF-EJsKfvz988"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {/* Redesigned Premium Unified Header */}
+            <HeaderDoanhNghiep activeTab="partners" />
 
             {/* Content */}
             <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
                 {/* Back link */}
                 <div className="mb-6">
-                    <a className="text-slate-500 hover:text-primary text-sm flex items-center gap-1 mb-2" href="#">
+                    <button
+                        onClick={() => navigate('/nha-may/doi-tac')}
+                        className="text-slate-500 hover:text-green-700 text-sm flex items-center gap-1.5 mb-2 focus:outline-none cursor-pointer font-semibold"
+                    >
                         <span className="material-symbols-outlined text-lg">arrow_back</span>
-                        Quay lại danh sách
-                    </a>
+                        Quay lại danh sách đối tác
+                    </button>
                 </div>
 
                 {/* Profile Card */}
@@ -112,7 +85,7 @@ const InforPartnerVip = () => {
                                     <div className="flex flex-col items-end gap-2">
                                         <div className="flex items-center gap-2">
                                             <div className="text-right">
-                                                <p className="text-xs text-slate-500 uppercase font-semibold">Trust Score</p>
+                                                <p className="text-xs text-slate-500 uppercase font-semibold">Điểm uy tín</p>
                                                 <p className="text-2xl font-bold text-green-600">98/100</p>
                                             </div>
                                             <div className="h-12 w-12 rounded-full border-4 border-green-500 flex items-center justify-center bg-green-50">
@@ -136,10 +109,23 @@ const InforPartnerVip = () => {
                     <div className="lg:col-span-2 space-y-8">
 
                         {/* Chart Card */}
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative overflow-hidden">
+                            {!isPremium && (
+                                <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3 rounded-2xl">
+                                    <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-3xl text-yellow-600" style={{ fontVariationSettings: "'FILL' 1" }}>lock</span>
+                                    </div>
+                                    <p className="font-bold text-slate-800 text-sm">Phân tích KCS nâng cao</p>
+                                    <p className="text-xs text-slate-500 text-center max-w-[200px]">Xem biểu đồ độ sạch và tạp chất theo thời gian của từng đối tác</p>
+                                    <Link to="/nha-may/premium" className="inline-flex items-center gap-1.5 bg-primary hover:bg-secondary text-white font-bold py-2 px-5 rounded-lg text-xs shadow-md transition-all">
+                                        <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+                                        Mua gói Premium
+                                    </Link>
+                                </div>
+                            )}
                             <div className="flex justify-between items-center mb-6">
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-800">Lịch sử Độ sạch (Impurity Trends)</h3>
+                                    <h3 className="text-lg font-bold text-slate-800">Lịch sử Độ sạch (% Tạp chất)</h3>
                                     <p className="text-sm text-slate-500">Tỉ lệ tạp chất trung bình 3 tháng gần nhất</p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -195,7 +181,20 @@ const InforPartnerVip = () => {
                         </div>
 
                         {/* Transaction History */}
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative overflow-hidden">
+                            {!isPremium && (
+                                <div className="absolute inset-0 z-10 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-3 rounded-2xl">
+                                    <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-3xl text-yellow-600" style={{ fontVariationSettings: "'FILL' 1" }}>lock</span>
+                                    </div>
+                                    <p className="font-bold text-slate-800 text-sm">Lịch sử Giao dịch đối tác</p>
+                                    <p className="text-xs text-slate-500 text-center max-w-[200px]">Xem toàn bộ lịch sử mua bán, trọng lượng và độ sạch theo từng lô</p>
+                                    <Link to="/nha-may/premium" className="inline-flex items-center gap-1.5 bg-primary hover:bg-secondary text-white font-bold py-2 px-5 rounded-lg text-xs shadow-md transition-all">
+                                        <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+                                        Mua gói Premium
+                                    </Link>
+                                </div>
+                            )}
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-lg font-bold text-slate-800">Lịch sử Giao dịch</h3>
                                 <button className="text-primary text-sm font-medium hover:underline">Xem tất cả</button>

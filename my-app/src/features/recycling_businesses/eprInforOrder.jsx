@@ -1,6 +1,9 @@
 import React from 'react';
+import HeaderDoanhNghiep from '../../components/layout/header_doanhNghiep/headerDoanhNghiep';
+import { useNavigate } from 'react-router-dom';
 
 const EprInforOrder = () => {
+    const navigate = useNavigate();
     return (
         <div className="font-sans text-slate-900 bg-slate-50 overflow-x-hidden min-h-screen flex flex-col">
             <style>{`
@@ -16,44 +19,20 @@ const EprInforOrder = () => {
         }
       `}</style>
 
-            {/* Header */}
-            <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center gap-4">
-                            <img
-                                alt="Re-Nats Logo"
-                                className="w-auto h-12 object-contain mix-blend-multiply"
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDK91fcaHmansgwcmixnPW2Kj6N96BE_TB3pFnlNc65ME78ARU4vT0E3i8Kg6UL1wU_n4_Jer0PoE7HlEYEUJK1ZPO35sLjnBf4WilVM4X6DdRfRJrMK2Jhdz9VEJChq0rMRTLR5lKyAy_zh0owPeKq2Z5cJ51_D_2Ti9RvtVlyuvFAgvgCW9gJ0gxogd3eKqpxFUbCIE5NBkhPl6yAB78IAUV21kEKZNKfRmUUv-2yBO5zvsteDFlVgfwFKyCe7u0Aj2jRGz1ZcZk"
-                            />
-                            <div className="hidden md:block h-6 w-px bg-slate-300"></div>
-                            <span className="text-slate-500 font-medium text-sm hidden md:block">EPR Compliance System</span>
-                        </div>
-                        <div className="flex items-center gap-6">
-                            <button className="text-slate-500 hover:text-primary font-medium text-sm flex items-center gap-2">
-                                <span className="material-symbols-outlined">arrow_back</span>
-                                Quay lại danh sách
-                            </button>
-                            <div className="flex items-center gap-3 pl-6 border-l border-slate-200">
-                                <div className="text-right hidden sm:block">
-                                    <p className="text-sm font-bold text-slate-700">Nguyễn Văn A</p>
-                                    <p className="text-xs text-slate-500">QC Manager</p>
-                                </div>
-                                <div className="h-10 w-10 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
-                                    <img
-                                        alt="User Avatar"
-                                        className="w-full h-full object-cover"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaOCJwjx5wu3GBVvPbHGqRWTMvqp2cVmKcT3ZJXTmEXviBbRz6psQfBkbZ9ADlhfUbC73qaF7xnmSpF-3MO2fvGDqzDurffZe_bE8je3JtW6kR2CsjeeNIytNJKPKzgd58IQYGRoEwxNLbUjuRpAL7l4bfdO0HZ81BzZh_NAnl8qo0xrVzU0JEAypiGXsnHkdrYJYEYi99QCQJ-P2Hrde_FzoqRQDpuZUep0kuuJy_IZ83Cjulj1wZi4Vq4VuVcRMF-EJsKfvz988"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {/* Redesigned Premium Unified Header */}
+            <HeaderDoanhNghiep activeTab="report" />
 
             {/* Main */}
             <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+                {/* Back button */}
+                <button
+                    onClick={() => navigate('/nha-may/bao-cao-epr')}
+                    className="flex items-center gap-1.5 text-slate-500 hover:text-green-700 font-bold text-xs mb-6 transition-colors focus:outline-none cursor-pointer"
+                >
+                    <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                    Quay lại danh sách báo cáo
+                </button>
+
                 {/* Page Title */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
@@ -260,7 +239,10 @@ const EprInforOrder = () => {
                                         <p className="text-xs text-slate-500">0909 123 456</p>
                                     </div>
                                 </div>
-                                <button className="w-full mt-2 text-xs text-primary font-semibold border border-primary/20 bg-white py-1.5 rounded hover:bg-primary/5 transition-colors">
+                                <button
+                                    onClick={() => navigate('/nha-may/doi-tac/1')}
+                                    className="w-full mt-2 text-xs text-primary font-semibold border border-primary/20 bg-white py-1.5 rounded hover:bg-primary/5 transition-colors cursor-pointer"
+                                >
                                     Xem hồ sơ nhà cung cấp
                                 </button>
                             </div>

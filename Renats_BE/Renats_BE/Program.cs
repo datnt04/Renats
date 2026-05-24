@@ -107,7 +107,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await DbSeeder.SeedAsync(db);
+    await DbSeeder.SeedAsync(db);       // Admin account
+    await DataSeeder.SeedAsync(db);     // Seller + Factory + Depots + Batches
 }
 
 if (app.Environment.IsDevelopment())

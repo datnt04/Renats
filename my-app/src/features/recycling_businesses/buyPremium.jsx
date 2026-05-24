@@ -1,9 +1,40 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import HeaderDoanhNghiep from '../../components/layout/header_doanhNghiep/headerDoanhNghiep';
+import { factoryService } from '../../services/factoryService';
+import { useToast } from '../../context/ToastContext';
 
 const BuyPremium = () => {
     const navigate = useNavigate();
-    const handleBuy = () => navigate('/nha-may/doi-tac-vip');
+    const toast = useToast();
+    const [premiumInfo, setPremiumInfo] = useState({ isPremium: false, expiresAt: null });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStatus = async () => {
+            try {
+                const res = await factoryService.getPremiumStatus();
+                setPremiumInfo(res);
+            } catch (err) {
+                console.error('Error fetching premium status:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStatus();
+    }, []);
+
+    const handleBuy = async (plan) => {
+        try {
+            const res = await factoryService.subscribePremium(plan);
+            setPremiumInfo({ isPremium: res.isPremium, expiresAt: res.expiresAt });
+            toast.success(`Nâng cấp Premium thành công! Hạn dùng mới: ${new Date(res.expiresAt).toLocaleDateString('vi-VN')}`);
+        } catch (err) {
+            console.error('Error subscribing to premium:', err);
+            toast.error('Nâng cấp Premium thất bại. Vui lòng thử lại!');
+        }
+    };
+
     return (
         <div className="font-sans text-slate-900 overflow-x-hidden bg-white">
             <style>{`
@@ -21,51 +52,33 @@ const BuyPremium = () => {
           backdrop-filter: blur(12px);
           border: 1px solid rgba(255, 255, 255, 0.3);
         }
-
-        .sticky-header {
-          position: sticky;
-          top: 0;
-          z-index: 50;
-          backdrop-filter: blur(8px);
-          background-color: rgba(255, 255, 255, 0.9);
-          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-        }
       `}</style>
 
-            {/* Header */}
-            <header className="sticky-header">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-20">
-                        <div className="flex-shrink-0">
-                            <img
-                                alt="Re-Nats Logo"
-                                className="w-auto h-20 block"
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPyNaZZPNIUwLzLK8rj79_kxgvsvN-3VOzkMfVbMB5K07A7CFYXbzLmZP-Ur0mJVBQMokrEuaiShXmaLuOJKhOsZ5q_tLSsx6Y6TRZJkUcUNwRPnIjMCtjhz8iZQ3xhKit1kegMFDIFx6cHSkrUWlYN32F3pz3g45C1GSNrE0wx_uV7raUzGcwWTsu65SzMOp5z63m12cShw7G3MuB64K8HpLtIz1srLWmsNBGLuOQzmgm5D_FVnqB7_DskDJc6jQsXe0MBDRrpzo"
-                            />
-                        </div>
-                        <nav className="hidden md:flex space-x-8">
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" href="#">Chợ Nguyên Liệu</a>
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" href="#">Danh Sách Vựa</a>
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" href="#">Báo Giá</a>
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" href="#">Tin tức</a>
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary transition-colors" href="#">Liên hệ</a>
-                        </nav>
-                        <div className="flex items-center space-x-4">
-                            <a className="text-sm font-semibold text-slate-700 hover:text-primary" href="#">Đăng nhập</a>
-                            <a
-                                className="bg-primary hover:bg-secondary text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-md shadow-green-200"
-                                href="#"
-                            >
-                                Đăng ký ngay
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {/* Redesigned Premium Unified Header */}
+            <HeaderDoanhNghiep activeTab="premium" />
 
             {/* Main Section */}
             <section className="relative min-h-screen py-20 hero-mesh-gradient">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+                    {/* Active Premium Banner */}
+                    {premiumInfo.isPremium && (
+                        <div className="max-w-3xl mx-auto mb-10 bg-gradient-to-r from-emerald-600 to-green-700 text-white rounded-2xl p-6 shadow-xl flex items-center justify-between border border-emerald-500">
+                            <div>
+                                <h3 className="text-lg font-bold flex items-center gap-2">
+                                    <span className="material-symbols-outlined">verified</span>
+                                    Tài khoản Premium Đang Hoạt Động
+                                </h3>
+                                <p className="text-emerald-100 text-sm mt-1">
+                                    Mở khóa đầy đủ các tính năng: danh bạ VIP, bản đồ đối tác, và lịch sử chất lượng/tạp chất.
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-xs uppercase tracking-wider text-emerald-200">Hạn sử dụng</p>
+                                <p className="text-lg font-black mt-0.5">{new Date(premiumInfo.expiresAt).toLocaleDateString('vi-VN')}</p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Heading */}
                     <div className="text-center max-w-3xl mx-auto mb-16">
@@ -107,7 +120,7 @@ const BuyPremium = () => {
                                     </li>
                                 </ul>
                             </div>
-                            <button onClick={handleBuy} className="w-full bg-slate-50 hover:bg-slate-100 text-primary border border-primary font-bold py-3 px-6 rounded-xl transition-colors">
+                            <button onClick={() => handleBuy('week')} className="w-full bg-slate-50 hover:bg-slate-100 text-primary border border-primary font-bold py-3 px-6 rounded-xl transition-colors">
                                 Chọn gói 1 Tuần
                             </button>
                         </div>
@@ -145,7 +158,7 @@ const BuyPremium = () => {
                                     </li>
                                 </ul>
                             </div>
-                            <button onClick={handleBuy} className="w-full bg-primary hover:bg-secondary text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-green-200 transition-all hover:-translate-y-0.5">
+                            <button onClick={() => handleBuy('year')} className="w-full bg-primary hover:bg-secondary text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-green-200 transition-all hover:-translate-y-0.5">
                                 Đăng ký gói 1 Năm
                             </button>
                         </div>
@@ -176,7 +189,7 @@ const BuyPremium = () => {
                                     </li>
                                 </ul>
                             </div>
-                            <button onClick={handleBuy} className="w-full bg-slate-50 hover:bg-slate-100 text-primary border border-primary font-bold py-3 px-6 rounded-xl transition-colors">
+                            <button onClick={() => handleBuy('month')} className="w-full bg-slate-50 hover:bg-slate-100 text-primary border border-primary font-bold py-3 px-6 rounded-xl transition-colors">
                                 Chọn gói 1 Tháng
                             </button>
                         </div>

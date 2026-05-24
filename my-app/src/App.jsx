@@ -49,6 +49,12 @@ import { ToastProvider } from './context/ToastContext';
 import './App.css';
 
 // Helper: bọc route với PrivateRoute
+// 🟢 BẬT DÒNG NÀY ĐỂ BỎ QUA ĐĂNG NHẬP KHI CHECK GIAO DIỆN CỤC BỘ:
+// const P = ({ roles, children }) => {
+//   return children;
+// };
+
+// 🔴 BỎ COMMENT DÒNG NÀY VÀ COMMENT DÒNG TRÊN LẠI KHI CHẠY THỰC TẾ CÓ DATABASE:
 const P = ({ roles, children }) => (
   <PrivateRoute allowedRoles={roles}>{children}</PrivateRoute>
 );
@@ -58,51 +64,50 @@ function App() {
     <ToastProvider>
       <Router>
         <Routes>
-        {/* ── Auth (public) ── */}
-        <Route path="/dang-nhap" element={<LoginPage />} />
-        <Route path="/dang-ky"   element={<RegisterPage />} />
+          {/* ── Auth (public) ── */}
+          <Route path="/dang-nhap" element={<LoginPage />} />
+          <Route path="/dang-ky" element={<RegisterPage />} />
 
-        {/* ── Public marketing ── */}
-        <Route path="/"           element={<LandingPage />} />
-        <Route path="/gioi-thieu" element={<Introduce />} />
+          {/* ── Public marketing ── */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/gioi-thieu" element={<Introduce />} />
 
-        {/* ── SELLER routes ── */}
-        <Route path="/seller/dashboard" element={<P roles={['SELLER']}><SellerDashboard /></P>} />
-        <Route path="/seller/dang-tin"  element={<P roles={['SELLER']}><CreateListing /></P>} />
-        <Route path="/seller/ho-so"     element={<P roles={['SELLER']}><SellerProfile /></P>} />
+          {/* ── SELLER routes ── */}
+          <Route path="/seller/dashboard" element={<P roles={['SELLER']}><SellerDashboard /></P>} />
+          <Route path="/seller/dang-tin" element={<P roles={['SELLER']}><CreateListing /></P>} />
+          <Route path="/seller/ho-so" element={<P roles={['SELLER']}><SellerProfile /></P>} />
 
-        {/* ── DEPOT (Kho) routes ── */}
-        <Route path="/kho/dashboard"    element={<P roles={['DEPOT']}><WarehouseDashboard /></P>} />
-        <Route path="/kho/tao-lo"       element={<P roles={['DEPOT']}><CreateBatchOrder /></P>} />
-        <Route path="/kho/yeu-cau/:id"  element={<P roles={['DEPOT']}><PickupRequestDetail /></P>} />
+          {/* ── DEPOT (Kho) routes ── */}
+          <Route path="/kho/dashboard" element={<P roles={['DEPOT']}><WarehouseDashboard /></P>} />
+          <Route path="/kho/tao-lo" element={<P roles={['DEPOT']}><CreateBatchOrder /></P>} />
+          <Route path="/kho/yeu-cau/:id" element={<P roles={['DEPOT']}><PickupRequestDetail /></P>} />
 
-        {/* ── FACTORY (Nhà máy) routes ── */}
-        <Route path="/nha-may/map"              element={<P roles={['FACTORY']}><MapVip /></P>} />
-        <Route path="/nha-may/premium"          element={<P roles={['FACTORY']}><BuyPremium /></P>} />
-        <Route path="/nha-may/doi-tac"          element={<P roles={['FACTORY']}><PartnerListLock isPremium={false} /></P>} />
-        <Route path="/nha-may/doi-tac-vip"      element={<P roles={['FACTORY']}><PartnerListLock isPremium={true} /></P>} />
-        <Route path="/nha-may/bao-cao-epr"      element={<P roles={['FACTORY']}><EprReport /></P>} />
-        <Route path="/nha-may/bao-cao-epr/:id"  element={<P roles={['FACTORY']}><EprInforOrder /></P>} />
-        <Route path="/nha-may/doi-tac/:id"      element={<P roles={['FACTORY']}><InforPartnerVip /></P>} />
-        <Route path="/recycle/dashboard"        element={<P roles={['FACTORY']}><DashboardRecycle /></P>} />
-        <Route path="/recycle/market"           element={<P roles={['FACTORY']}><MaterialsMarket /></P>} />
-        <Route path="/recycle/market-premium"   element={<P roles={['FACTORY']}><PremiumMarket /></P>} />
-        <Route path="/recycle/order-process"    element={<P roles={['FACTORY']}><OrderProcess /></P>} />
-        <Route path="/recycle/order-confirm"    element={<P roles={['FACTORY']}><OrderConfirm /></P>} />
+          {/* ── FACTORY (Nhà máy) routes ── */}
+          <Route path="/nha-may/map" element={<P roles={['FACTORY']}><MapVip /></P>} />
+          <Route path="/nha-may/premium" element={<P roles={['FACTORY']}><BuyPremium /></P>} />
+          <Route path="/nha-may/doi-tac" element={<P roles={['FACTORY']}><PartnerListLock /></P>} />
+          <Route path="/nha-may/bao-cao-epr" element={<P roles={['FACTORY']}><EprReport /></P>} />
+          <Route path="/nha-may/bao-cao-epr/:id" element={<P roles={['FACTORY']}><EprInforOrder /></P>} />
+          <Route path="/nha-may/doi-tac/:id" element={<P roles={['FACTORY']}><InforPartnerVip /></P>} />
+          <Route path="/recycle/dashboard" element={<P roles={['FACTORY']}><DashboardRecycle /></P>} />
+          <Route path="/recycle/market" element={<P roles={['FACTORY']}><MaterialsMarket /></P>} />
+          <Route path="/recycle/market-premium" element={<P roles={['FACTORY']}><PremiumMarket /></P>} />
+          <Route path="/recycle/order-process" element={<P roles={['FACTORY']}><OrderProcess /></P>} />
+          <Route path="/recycle/order-confirm" element={<P roles={['FACTORY']}><OrderConfirm /></P>} />
 
-        {/* ── DRIVER (Tài xế) routes ── */}
-        <Route path="/transport/market"         element={<P roles={['DRIVER']}><TransportationMarketplace /></P>} />
-        <Route path="/transport/order-details"  element={<P roles={['DRIVER']}><TransportationOrderDetails /></P>} />
-        <Route path="/transport/trip-booking"   element={<P roles={['DRIVER']}><TransportationTripDetailsBooking /></P>} />
-        <Route path="/transport/waiting-confirm" element={<P roles={['DRIVER']}><TransportationWaitingConfirm /></P>} />
-        <Route path="/van-chuyen/chuyen-xe"     element={<P roles={['DRIVER']}><StartOrder /></P>} />
-        <Route path="/van-chuyen/checkin"       element={<P roles={['DRIVER']}><CheckinOrder /></P>} />
-        <Route path="/van-chuyen/di-chuyen"     element={<P roles={['DRIVER']}><CheckinOrderStep2 /></P>} />
+          {/* ── DRIVER (Tài xế) routes ── */}
+          <Route path="/transport/market" element={<P roles={['DRIVER']}><TransportationMarketplace /></P>} />
+          <Route path="/transport/order-details" element={<P roles={['DRIVER']}><TransportationOrderDetails /></P>} />
+          <Route path="/transport/trip-booking" element={<P roles={['DRIVER']}><TransportationTripDetailsBooking /></P>} />
+          <Route path="/transport/waiting-confirm" element={<P roles={['DRIVER']}><TransportationWaitingConfirm /></P>} />
+          <Route path="/van-chuyen/chuyen-xe" element={<P roles={['DRIVER']}><StartOrder /></P>} />
+          <Route path="/van-chuyen/checkin" element={<P roles={['DRIVER']}><CheckinOrder /></P>} />
+          <Route path="/van-chuyen/di-chuyen" element={<P roles={['DRIVER']}><CheckinOrderStep2 /></P>} />
 
-        {/* ── Shared (đăng nhập là vào được) ── */}
-        <Route path="/hoa-don/:id" element={<P roles={['SELLER','DEPOT','FACTORY','DRIVER','ADMIN']}><Invoice /></P>} />
-      </Routes>
-    </Router>
+          {/* ── Shared (đăng nhập là vào được) ── */}
+          <Route path="/hoa-don/:id" element={<P roles={['SELLER', 'DEPOT', 'FACTORY', 'DRIVER', 'ADMIN']}><Invoice /></P>} />
+        </Routes>
+      </Router>
     </ToastProvider>
   );
 }

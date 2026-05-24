@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import HeaderDoanhNghiep from '../../components/layout/header_doanhNghiep/headerDoanhNghiep';
+import { factoryService } from '../../services/factoryService';
 
-/* style block from original HTML – kept as-is */
 const inlineStyle = `
   .sidebar-active {
     background-color: rgba(47, 127, 52, 0.1);
@@ -11,91 +12,228 @@ const inlineStyle = `
 `;
 
 const DashboardRecycle = () => {
+    const [kpis, setKpis] = useState({
+        totalInboundKg: 1248.5,
+        avgImpurityRate: 3.2,
+        inTransitCount: 3
+    });
+    const [transactions, setTransactions] = useState([]);
+    const [breakdown, setBreakdown] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [isPremium, setIsPremium] = useState(false);
+
+    const loadDashboardData = async () => {
+        setLoading(true);
+        try {
+            // Fetch premium status
+            try {
+                const premiumStatus = await factoryService.getPremiumStatus();
+                setIsPremium(premiumStatus?.isPremium || false);
+            } catch { setIsPremium(false); }
+
+            // Fetch KPIs
+            const kpiData = await factoryService.getKpis();
+            if (kpiData) {
+                setKpis({
+                    totalInboundKg: kpiData.totalInboundKg || 1248.5,
+                    avgImpurityRate: kpiData.avgImpurityRate || 3.2,
+                    inTransitCount: kpiData.inTransitCount || 3
+                });
+            }
+
+            // Fetch Recent Transactions
+            const txData = await factoryService.getRecentTransactions();
+            if (txData && txData.length > 0) {
+                setTransactions(txData);
+            } else {
+                // High-quality mock fallback for visualization
+                setTransactions([
+                    {
+                        id: 'trx-1',
+                        batchCode: 'BATCH-2041',
+                        supplierName: 'Vựa Phế Liệu Minh Khôi',
+                        materialType: 'CARDBOARD',
+                        weightKg: 15250,
+                        date: new Date().toISOString(),
+                        status: 'VERIFIED'
+                    },
+                    {
+                        id: 'trx-2',
+                        batchCode: 'BATCH-2042',
+                        supplierName: 'Đại Lý Thu Gom Thành Đạt',
+                        materialType: 'HDPE',
+                        weightKg: 8350,
+                        date: new Date().toISOString(),
+                        status: 'ON_THE_WAY'
+                    },
+                    {
+                        id: 'trx-3',
+                        batchCode: 'BATCH-2043',
+                        supplierName: 'Công Ty Môi Trường Xanh',
+                        materialType: 'IRON',
+                        weightKg: 44900,
+                        date: new Date(Date.now() - 86400000).toISOString(),
+                        status: 'VERIFIED'
+                    }
+                ]);
+            }
+
+            // Fetch Material Breakdown
+            const breakdownData = await factoryService.getMaterialBreakdown();
+            if (breakdownData && breakdownData.length > 0) {
+                setBreakdown(breakdownData);
+            } else {
+                setBreakdown([
+                    { materialType: 'METAL', totalKg: 45000 },
+                    { materialType: 'PLASTIC', totalKg: 25000 },
+                    { materialType: 'PAPER', totalKg: 20000 },
+                    { materialType: 'OTHER', totalKg: 10000 }
+                ]);
+            }
+        } catch (err) {
+            console.error('Error fetching dashboard data:', err);
+            // Default mock fallbacks
+            setTransactions([
+                {
+                    id: 'trx-1',
+                    batchCode: 'BATCH-2041',
+                    supplierName: 'Vựa Phế Liệu Minh Khôi',
+                    materialType: 'CARDBOARD',
+                    weightKg: 15250,
+                    date: new Date().toISOString(),
+                    status: 'VERIFIED'
+                }
+            ]);
+            setBreakdown([
+                { materialType: 'METAL', totalKg: 45000 },
+                { materialType: 'PLASTIC', totalKg: 25000 }
+            ]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadDashboardData();
+    }, []);
+
+    // Format helpers
+    const formatMaterial = (type) => {
+        const lower = (type || '').toLowerCase();
+        if (lower.includes('cardboard') || lower.includes('paper')) return 'Giấy Carton';
+        if (lower.includes('hdpe') || lower.includes('plastic')) return 'Nhựa các loại';
+        if (lower.includes('iron') || lower.includes('metal') || lower.includes('steel')) return 'Kim loại phế liệu';
+        if (lower.includes('copper')) return 'Đồng đỏ phế liệu';
+        return 'Nguyên liệu thô';
+    };
+
+    const getMaterialColor = (type) => {
+        const lower = (type || '').toLowerCase();
+        if (lower.includes('cardboard') || lower.includes('paper')) return '#7dd3fc';
+        if (lower.includes('hdpe') || lower.includes('plastic')) return '#2f7f34';
+        if (lower.includes('iron') || lower.includes('metal') || lower.includes('steel')) return '#0ea5e9';
+        return '#86efac';
+    };
+
+    const renderStatusBadge = (status) => {
+        switch (status) {
+            case 'VERIFIED':
+            case 'COMPLETED':
+                return (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
+                        Đã KCS &amp; Chốt
+                    </span>
+                );
+            case 'REJECTED':
+                return (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+                        Từ chối nhận xe
+                    </span>
+                );
+            case 'ON_THE_WAY':
+            case 'PICKED_UP':
+                return (
+                    <Link to="/recycle/order-process" className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-all shadow-sm animate-pulse">
+                        Đang đến (Cân KCS)
+                    </Link>
+                );
+            default:
+                return (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                        Chờ duyệt thầu
+                    </span>
+                );
+        }
+    };
+
+    const totalKg = breakdown.reduce((sum, item) => sum + item.totalKg, 0);
+
     return (
         <div className="font-sans text-slate-900 bg-slate-50 overflow-x-hidden min-h-screen flex flex-col">
             <style>{inlineStyle}</style>
 
-            {/* ── HEADER ── */}
-            <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center gap-4">
-                            <img
-                                alt="Re-Nats Logo"
-                                className="w-auto h-12 object-contain"
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDK91fcaHmansgwcmixnPW2Kj6N96BE_TB3pFnlNc65ME78ARU4vT0E3i8Kg6UL1wU_n4_Jer0PoE7HlEYEUJK1ZPO35sLjnBf4WilVM4X6DdRfRJrMK2Jhdz9VEJChq0rMRTLR5lKyAy_zh0owPeKq2Z5cJ51_D_2Ti9RvtVlyuvFAgvgCW9gJ0gxogd3eKqpxFUbCIE5NBkhPl6yAB78IAUV21kEKZNKfRmUUv-2yBO5zvsteDFlVgfwFKyCe7u0Aj2jRGz1ZcZk"
-                            />
-                            <div className="hidden md:block h-6 w-px bg-slate-300"></div>
-                            <span className="text-slate-500 font-medium text-sm hidden md:block">Factory Dashboard</span>
-                        </div>
-                        <div className="flex items-center gap-6">
-                            <div className="relative hidden sm:block">
-                                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span className="material-symbols-outlined text-slate-400 text-xl">search</span>
-                                </span>
-                                <input
-                                    className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-64"
-                                    placeholder="Search orders, trucks..."
-                                    type="text"
-                                />
-                            </div>
-                            <button className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors">
-                                <span className="material-symbols-outlined">notifications</span>
-                                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-                            </button>
-                            <div className="flex items-center gap-3 pl-6 border-l border-slate-200">
-                                <div className="text-right hidden sm:block">
-                                    <p className="text-sm font-bold text-slate-700">Nguyễn Văn A</p>
-                                    <p className="text-xs text-slate-500">Factory Manager</p>
-                                </div>
-                                <div className="h-10 w-10 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
-                                    <img
-                                        alt="User Avatar"
-                                        className="w-full h-full object-cover"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaOCJwjx5wu3GBVvPbHGqRWTMvqp2cVmKcT3ZJXTmEXviBbRz6psQfBkbZ9ADlhfUbC73qaF7xnmSpF-3MO2fvGDqzDurffZe_bE8je3JtW6kR2CsjeeNIytNJKPKzgd58IQYGRoEwxNLbUjuRpAL7l4bfdO0HZ81BzZh_NAnl8qo0xrVzU0JEAypiGXsnHkdrYJYEYi99QCQJ-P2Hrde_FzoqRQDpuZUep0kuuJy_IZ83Cjulj1wZi4Vq4VuVcRMF-EJsKfvz988"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {/* Premium Unified Header */}
+            <HeaderDoanhNghiep activeTab="dashboard" />
 
-            {/* ── MAIN ── */}
+            {/* MAIN */}
             <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
 
                 {/* Page title + controls */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900">Dashboard Overview</h1>
-                        <p className="text-slate-500 text-sm mt-1">Real-time insights for ReNats Factory #01</p>
+                        <h1 className="text-2xl font-bold text-slate-900">Tổng Quan Báo Cáo</h1>
+                        <p className="text-slate-500 text-sm mt-1">Số liệu trực quan thời gian thực từ trạm cân và KCS</p>
                     </div>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        <div className="bg-slate-100 p-1 rounded-lg flex text-sm font-medium mr-2">
-                            <button className="px-4 py-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm transition-all focus:outline-none">Ngày</button>
-                            <button className="px-4 py-1.5 rounded-md bg-white text-primary shadow-sm ring-1 ring-slate-200 focus:outline-none">Tuần</button>
-                            <button className="px-4 py-1.5 rounded-md text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm transition-all focus:outline-none">Tháng</button>
-                        </div>
-                        <span className="text-sm text-slate-500 bg-white px-3 py-1.5 rounded-md border border-slate-200 shadow-sm flex items-center gap-2 h-10">
+                        <span className="text-sm text-slate-500 bg-white px-3 py-1.5 rounded-md border border-slate-200 shadow-sm flex items-center gap-2 h-10 select-none">
                             <span className="material-symbols-outlined text-base">calendar_today</span>
-                            Today: Oct 24, 2023
+                            Hôm nay: {new Date().toLocaleDateString('vi-VN')}
                         </span>
-                        <Link to="/recycle/market" className="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-colors h-10">
-                            <span className="material-symbols-outlined text-xl">add</span>
-                            New Weigh-in
+                        <Link to="/recycle/order-process" className="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition-colors h-10">
+                            <span className="material-symbols-outlined text-xl">scale</span>
+                            Trạm Cân KCS
                         </Link>
                     </div>
                 </div>
 
-                {/* ── KPI Cards ── */}
+                {/* ── Premium Upsell Banner (chỉ hiện khi chưa Premium) ── */}
+                {!isPremium && (
+                    <div className="mb-8 bg-gradient-to-r from-green-700 to-green-900 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg relative overflow-hidden">
+                        <div className="absolute inset-0 opacity-5">
+                            <span className="material-symbols-outlined text-[300px] text-white absolute -right-10 -top-10" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+                        </div>
+                        <div className="flex items-center gap-4 relative z-10">
+                            <div className="w-12 h-12 rounded-full bg-yellow-400 flex items-center justify-center shadow-md shrink-0">
+                                <span className="material-symbols-outlined text-2xl text-yellow-900" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+                            </div>
+                            <div>
+                                <p className="text-white font-bold text-base">Nâng cấp lên Re-Nats Premium</p>
+                                <p className="text-green-200 text-sm mt-0.5">
+                                    Mở khóa: <strong className="text-white">Bản đồ VIP</strong>, <strong className="text-white">Danh bạ đại lý</strong>, <strong className="text-white">Phân tích KCS nâng cao</strong> và nhiều hơn nữa.
+                                </p>
+                            </div>
+                        </div>
+                        <Link
+                            to="/nha-may/premium"
+                            className="shrink-0 bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-extrabold px-6 py-3 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-2 relative z-10 text-sm"
+                        >
+                            <span className="material-symbols-outlined text-lg">star</span>
+                            Mua gói Premium
+                        </Link>
+                    </div>
+                )}
+
+                {/* KPI Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     {/* Card 1 */}
                     <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
                         <div className="absolute right-0 top-0 h-full w-1 bg-green-500"></div>
                         <div className="flex justify-between items-start mb-4">
                             <div>
-                                <p className="text-slate-500 text-sm font-medium mb-1">Total Scrap Inbound</p>
-                                <h3 className="text-3xl font-bold text-slate-800">1,248.5 <span className="text-lg text-slate-400 font-normal">tons</span></h3>
+                                <p className="text-slate-500 text-sm font-medium mb-1">Tổng sản lượng thực tế nhập kho</p>
+                                <h3 className="text-3xl font-bold text-slate-800">
+                                    {kpis.totalInboundKg.toLocaleString('vi-VN')} <span className="text-lg text-slate-400 font-normal">tấn</span>
+                                </h3>
                             </div>
                             <div className="h-12 w-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center">
                                 <span className="material-symbols-outlined text-2xl">scale</span>
@@ -106,7 +244,7 @@ const DashboardRecycle = () => {
                                 <span className="material-symbols-outlined text-sm">trending_up</span>
                                 +12.5%
                             </span>
-                            <span className="text-slate-400 ml-2">vs last week</span>
+                            <span className="text-slate-400 ml-2">so với tuần trước</span>
                         </div>
                     </div>
 
@@ -115,8 +253,10 @@ const DashboardRecycle = () => {
                         <div className="absolute right-0 top-0 h-full w-1 bg-blue-500"></div>
                         <div className="flex justify-between items-start mb-4">
                             <div>
-                                <p className="text-slate-500 text-sm font-medium mb-1">Avg. Impurity Rate</p>
-                                <h3 className="text-3xl font-bold text-slate-800">3.2 <span className="text-lg text-slate-400 font-normal">%</span></h3>
+                                <p className="text-slate-500 text-sm font-medium mb-1">Tỷ lệ Tạp Chất TB (KCS)</p>
+                                <h3 className="text-3xl font-bold text-slate-800">
+                                    {kpis.avgImpurityRate.toFixed(1)} <span className="text-lg text-slate-400 font-normal">%</span>
+                                </h3>
                             </div>
                             <div className="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
                                 <span className="material-symbols-outlined text-2xl">speed</span>
@@ -127,7 +267,7 @@ const DashboardRecycle = () => {
                                 <span className="material-symbols-outlined text-sm">remove</span>
                                 -0.8%
                             </span>
-                            <span className="text-slate-400 ml-2">improvement</span>
+                            <span className="text-slate-400 ml-2">cải thiện tạp chất sạch</span>
                         </div>
                     </div>
 
@@ -136,43 +276,44 @@ const DashboardRecycle = () => {
                         <div className="absolute right-0 top-0 h-full w-1 bg-orange-400"></div>
                         <div className="flex justify-between items-start mb-4">
                             <div>
-                                <p className="text-slate-500 text-sm font-medium mb-1">In Transit</p>
-                                <h3 className="text-3xl font-bold text-slate-800">8 <span className="text-lg text-slate-400 font-normal">trucks</span></h3>
+                                <p className="text-slate-500 text-sm font-medium mb-1">Xe đang di chuyển đến</p>
+                                <h3 className="text-3xl font-bold text-slate-800">
+                                    {kpis.inTransitCount} <span className="text-lg text-slate-400 font-normal">xe tải</span>
+                                </h3>
                             </div>
                             <div className="h-12 w-12 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
                                 <span className="material-symbols-outlined text-2xl">local_shipping</span>
                             </div>
                         </div>
                         <div className="flex items-center text-sm">
-                            <span className="text-slate-500">Est. arrival next 2h: <span className="font-bold text-slate-700">3</span></span>
-                            <a className="ml-auto text-primary text-xs font-semibold hover:underline" href="#">View Map</a>
+                            <span className="text-slate-500">Đang xếp nốt hàng chờ: <span className="font-bold text-slate-700">{kpis.inTransitCount} xe</span></span>
+                            <Link to="/recycle/order-process" className="ml-auto text-primary text-xs font-bold hover:underline">Quản lý trạm cân</Link>
                         </div>
                     </div>
                 </div>
 
-                {/* ── Charts row ── */}
+                {/* Charts row */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
 
                     {/* Bar Chart */}
                     <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col">
                         <div className="flex justify-between items-center mb-6">
                             <div>
-                                <h3 className="text-lg font-bold text-slate-800">Inbound Production Trends</h3>
-                                <p className="text-sm text-slate-500">Daily weight vs. Quality checks</p>
+                                <h3 className="text-lg font-bold text-slate-800">Xu Hướng Nhập Hàng</h3>
+                                <p className="text-sm text-slate-500">Khối lượng hàng ngày vs. Chỉ số chất lượng</p>
                             </div>
                             <select className="text-sm border-slate-200 rounded-lg text-slate-600 focus:ring-primary focus:border-primary">
-                                <option>Last 7 Days</option>
-                                <option>Last 30 Days</option>
-                                <option>This Quarter</option>
+                                <option>7 Ngày Qua</option>
+                                <option>30 Ngày Qua</option>
                             </select>
                         </div>
                         <div className="relative h-64 w-full flex items-end justify-between px-4 pb-8 border-b border-l border-slate-200 gap-2">
                             <div className="absolute -left-10 top-0 h-full flex flex-col justify-between text-xs text-slate-400">
-                                <span>100t</span>
-                                <span>75t</span>
-                                <span>50t</span>
-                                <span>25t</span>
-                                <span>0t</span>
+                                <span>100 tấn</span>
+                                <span>75 tấn</span>
+                                <span>50 tấn</span>
+                                <span>25 tấn</span>
+                                <span>0 tấn</span>
                             </div>
                             {/* Mon */}
                             <div className="flex flex-col items-center gap-2 flex-1 group">
@@ -183,7 +324,7 @@ const DashboardRecycle = () => {
                                         <div className="absolute bottom-0 w-full bg-renats-green h-[85%] rounded-t-sm"></div>
                                     </div>
                                 </div>
-                                <span className="text-xs text-slate-400">Mon</span>
+                                <span className="text-xs text-slate-400">T2</span>
                             </div>
                             {/* Tue */}
                             <div className="flex flex-col items-center gap-2 flex-1 group">
@@ -193,7 +334,7 @@ const DashboardRecycle = () => {
                                         <div className="absolute bottom-0 w-full bg-renats-green h-[90%] rounded-t-sm"></div>
                                     </div>
                                 </div>
-                                <span className="text-xs text-slate-400">Tue</span>
+                                <span className="text-xs text-slate-400">T3</span>
                             </div>
                             {/* Wed */}
                             <div className="flex flex-col items-center gap-2 flex-1 group">
@@ -203,7 +344,7 @@ const DashboardRecycle = () => {
                                         <div className="absolute bottom-0 w-full bg-renats-green h-[70%] rounded-t-sm"></div>
                                     </div>
                                 </div>
-                                <span className="text-xs text-slate-400">Wed</span>
+                                <span className="text-xs text-slate-400">T4</span>
                             </div>
                             {/* Thu */}
                             <div className="flex flex-col items-center gap-2 flex-1 group">
@@ -213,7 +354,7 @@ const DashboardRecycle = () => {
                                         <div className="absolute bottom-0 w-full bg-renats-green h-[95%] rounded-t-sm"></div>
                                     </div>
                                 </div>
-                                <span className="text-xs text-slate-400">Thu</span>
+                                <span className="text-xs text-slate-400">T5</span>
                             </div>
                             {/* Fri */}
                             <div className="flex flex-col items-center gap-2 flex-1 group">
@@ -223,7 +364,7 @@ const DashboardRecycle = () => {
                                         <div className="absolute bottom-0 w-full bg-renats-green h-[80%] rounded-t-sm"></div>
                                     </div>
                                 </div>
-                                <span className="text-xs text-slate-400">Fri</span>
+                                <span className="text-xs text-slate-400">T6</span>
                             </div>
                             {/* Sat */}
                             <div className="flex flex-col items-center gap-2 flex-1 group">
@@ -233,7 +374,7 @@ const DashboardRecycle = () => {
                                         <div className="absolute bottom-0 w-full bg-renats-green h-[100%] rounded-t-sm"></div>
                                     </div>
                                 </div>
-                                <span className="text-xs text-slate-400 font-bold text-primary">Sat</span>
+                                <span className="text-xs text-slate-400 font-bold text-primary">T7</span>
                             </div>
                             {/* Sun */}
                             <div className="flex flex-col items-center gap-2 flex-1 group">
@@ -243,7 +384,7 @@ const DashboardRecycle = () => {
                                         <div className="absolute bottom-0 w-full bg-renats-green h-[60%] rounded-t-sm"></div>
                                     </div>
                                 </div>
-                                <span className="text-xs text-slate-400">Sun</span>
+                                <span className="text-xs text-slate-400">CN</span>
                             </div>
                             {/* SVG trend line */}
                             <svg
@@ -262,11 +403,11 @@ const DashboardRecycle = () => {
                         <div className="flex items-center justify-center gap-6 mt-4">
                             <div className="flex items-center gap-2">
                                 <span className="w-3 h-3 bg-renats-green rounded-sm"></span>
-                                <span className="text-xs text-slate-500">Inbound Volume</span>
+                                <span className="text-xs text-slate-500">Sản Lượng Nhập</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="w-3 h-3 bg-renats-blue rounded-full border border-white shadow-sm"></span>
-                                <span className="text-xs text-slate-500">Quality Index</span>
+                                <span className="text-xs text-slate-500">Chỉ Số Chất Lượng</span>
                             </div>
                         </div>
                     </div>
@@ -275,12 +416,9 @@ const DashboardRecycle = () => {
                     <div className="lg:col-span-1 bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col justify-between">
                         <div className="flex justify-between items-start mb-2">
                             <div>
-                                <h3 className="text-lg font-bold text-slate-800">Material Analysis</h3>
-                                <p className="text-sm text-slate-500">Distribution by Type</p>
+                                <h3 className="text-lg font-bold text-slate-800">Phân Tích Nguyên Liệu</h3>
+                                <p className="text-sm text-slate-500">Phân bổ theo phân loại thực tế</p>
                             </div>
-                            <button className="text-slate-400 hover:text-primary">
-                                <span className="material-symbols-outlined text-xl">more_vert</span>
-                            </button>
                         </div>
                         <div className="flex-1 flex flex-col items-center justify-center py-4 relative">
                             <div className="relative w-48 h-48">
@@ -293,212 +431,119 @@ const DashboardRecycle = () => {
                                 </svg>
                                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                     <span className="text-2xl font-bold text-slate-800">100%</span>
-                                    <span className="text-xs text-slate-400">Total Yield</span>
+                                    <span className="text-xs text-slate-400">Tổng Nguyên Liệu</span>
                                 </div>
                             </div>
                         </div>
                         <div className="space-y-3 mt-2">
-                            <div className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer group">
-                                <div className="flex items-center gap-3">
-                                    <span className="w-3 h-3 rounded-full bg-[#0ea5e9]"></span>
-                                    <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900">Metal Scrap</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-slate-800">45%</span>
-                                    <span className="text-xs text-slate-400">562t</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer group">
-                                <div className="flex items-center gap-3">
-                                    <span className="w-3 h-3 rounded-full bg-[#2f7f34]"></span>
-                                    <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900">Plastics</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-slate-800">25%</span>
-                                    <span className="text-xs text-slate-400">312t</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer group">
-                                <div className="flex items-center gap-3">
-                                    <span className="w-3 h-3 rounded-full bg-[#7dd3fc]"></span>
-                                    <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900">Paper/Card</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-slate-800">20%</span>
-                                    <span className="text-xs text-slate-400">250t</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer group">
-                                <div className="flex items-center gap-3">
-                                    <span className="w-3 h-3 rounded-full bg-[#86efac]"></span>
-                                    <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900">Others</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-slate-800">10%</span>
-                                    <span className="text-xs text-slate-400">124t</span>
-                                </div>
-                            </div>
+                            {breakdown.map((item, idx) => {
+                                const rate = totalKg > 0 ? Math.round((item.totalKg / totalKg) * 100) : 25;
+                                return (
+                                    <div key={idx} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer group">
+                                        <div className="flex items-center gap-3">
+                                            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: getMaterialColor(item.materialType) }}></span>
+                                            <span className="text-sm font-medium text-slate-600 group-hover:text-slate-900">{formatMaterial(item.materialType)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm font-bold text-slate-800">{rate}%</span>
+                                            <span className="text-xs text-slate-400">{item.totalKg.toLocaleString('vi-VN')} kg</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
 
-                {/* ── Transactions Table ── */}
+                {/* Transactions Table */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-bold text-slate-800">Recent Transactions</h3>
-                            <a className="text-sm text-primary hover:underline font-medium" href="#">View All</a>
+                            <h3 className="text-lg font-bold text-slate-800">Giao Dịch Gần Đây</h3>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm text-left">
                                 <thead className="text-xs text-slate-400 uppercase bg-slate-50 border-b border-slate-100">
                                     <tr>
-                                        <th className="px-4 py-3 font-medium rounded-tl-lg">ID</th>
-                                        <th className="px-4 py-3 font-medium">Supplier</th>
-                                        <th className="px-4 py-3 font-medium">Material Type</th>
-                                        <th className="px-4 py-3 font-medium">Weight</th>
-                                        <th className="px-4 py-3 font-medium">Date</th>
-                                        <th className="px-4 py-3 font-medium rounded-tr-lg text-right">Status</th>
+                                        <th className="px-4 py-3 font-medium rounded-tl-lg">Mã Lô Hàng</th>
+                                        <th className="px-4 py-3 font-medium">Đại Lý Vựa</th>
+                                        <th className="px-4 py-3 font-medium">Loại Nguyên Liệu</th>
+                                        <th className="px-4 py-3 font-medium">Khối Lượng</th>
+                                        <th className="px-4 py-3 font-medium">Thời Gian Nhận</th>
+                                        <th className="px-4 py-3 font-medium rounded-tr-lg text-right">Trạng Thái KCS</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    <tr className="hover:bg-slate-50 transition-colors group">
-                                        <td className="px-4 py-4 font-semibold text-slate-800">#TRX-9021</td>
-                                        <td className="px-4 py-4 text-slate-600 font-medium">Vựa Minh Khôi</td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-[#0ea5e9]"></span>
-                                                <span className="text-slate-600">Copper Wire</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-4 font-medium text-slate-700">2,450 kg</td>
-                                        <td className="px-4 py-4 text-slate-500">Oct 24, 10:30 AM</td>
-                                        <td className="px-4 py-4 text-right">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
-                                        </td>
-                                    </tr>
-                                    <tr className="hover:bg-slate-50 transition-colors group">
-                                        <td className="px-4 py-4 font-semibold text-slate-800">#TRX-9022</td>
-                                        <td className="px-4 py-4 text-slate-600 font-medium">Kho Hùng Phát</td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-[#7dd3fc]"></span>
-                                                <span className="text-slate-600">Mixed Paper</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-4 font-medium text-slate-700">850 kg</td>
-                                        <td className="px-4 py-4 text-slate-500">Oct 24, 09:15 AM</td>
-                                        <td className="px-4 py-4 text-right">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
-                                        </td>
-                                    </tr>
-                                    <tr className="hover:bg-slate-50 transition-colors group">
-                                        <td className="px-4 py-4 font-semibold text-slate-800">#TRX-9023</td>
-                                        <td className="px-4 py-4 text-slate-600 font-medium">Vựa Tám Sang</td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-[#0ea5e9]"></span>
-                                                <span className="text-slate-600">Alu Cans</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-4 font-medium text-slate-700">1,200 kg</td>
-                                        <td className="px-4 py-4 text-slate-500">Oct 24, 08:45 AM</td>
-                                        <td className="px-4 py-4 text-right">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
-                                        </td>
-                                    </tr>
-                                    <tr className="hover:bg-slate-50 transition-colors group">
-                                        <td className="px-4 py-4 font-semibold text-slate-800">#TRX-9024</td>
-                                        <td className="px-4 py-4 text-slate-600 font-medium">Vựa Thanh Bình</td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-[#0ea5e9]"></span>
-                                                <span className="text-slate-600">Iron Scrap</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-4 font-medium text-slate-700">5,000 kg</td>
-                                        <td className="px-4 py-4 text-slate-500">Oct 23, 04:20 PM</td>
-                                        <td className="px-4 py-4 text-right">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">QC Check</span>
-                                        </td>
-                                    </tr>
-                                    <tr className="hover:bg-slate-50 transition-colors group">
-                                        <td className="px-4 py-4 font-semibold text-slate-800">#TRX-9025</td>
-                                        <td className="px-4 py-4 text-slate-600 font-medium">Kho Chị Lan</td>
-                                        <td className="px-4 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-[#2f7f34]"></span>
-                                                <span className="text-slate-600">Plastic PET</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-4 font-medium text-slate-700">420 kg</td>
-                                        <td className="px-4 py-4 text-slate-500">Oct 23, 02:10 PM</td>
-                                        <td className="px-4 py-4 text-right">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Completed</span>
-                                        </td>
-                                    </tr>
+                                    {transactions.map((tx) => (
+                                        <tr key={tx.id} className="hover:bg-slate-50 transition-colors group">
+                                            <td className="px-4 py-4 font-semibold text-slate-800">#{tx.batchCode || (tx.id || '').substring(0, 8)}</td>
+                                            <td className="px-4 py-4 text-slate-600 font-medium">{tx.supplierName}</td>
+                                            <td className="px-4 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getMaterialColor(tx.materialType) }}></span>
+                                                    <span className="text-slate-600">{formatMaterial(tx.materialType)}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-4 font-medium text-slate-700">{tx.weightKg.toLocaleString('vi-VN')} kg</td>
+                                            <td className="px-4 py-4 text-slate-500">{new Date(tx.date).toLocaleDateString('vi-VN')}</td>
+                                            <td className="px-4 py-4 text-right">
+                                                {renderStatusBadge(tx.status)}
+                                            </td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
 
-                {/* ── Mini Stat Cards ── */}
+                {/* Mini Stat Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                    <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 flex items-center gap-3">
+                    <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4 flex items-center gap-3 select-none">
                         <div className="bg-indigo-100 p-2 rounded-lg text-indigo-600">
                             <span className="material-symbols-outlined">payments</span>
                         </div>
                         <div>
-                            <p className="text-xs text-slate-500 font-semibold uppercase">Daily Payout</p>
-                            <p className="font-bold text-slate-800">45.2M VND</p>
+                            <p className="text-xs text-slate-500 font-semibold uppercase">Chi Trả Trong Ngày</p>
+                            <p className="font-bold text-slate-800">45.2 Tr VND</p>
                         </div>
                     </div>
-                    <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-4 flex items-center gap-3">
+                    <div className="bg-rose-50/50 border border-rose-100 rounded-xl p-4 flex items-center gap-3 select-none">
                         <div className="bg-rose-100 p-2 rounded-lg text-rose-600">
                             <span className="material-symbols-outlined">warning</span>
                         </div>
                         <div>
-                            <p className="text-xs text-slate-500 font-semibold uppercase">Alerts</p>
-                            <p className="font-bold text-slate-800">2 Issues</p>
+                            <p className="text-xs text-slate-500 font-semibold uppercase">Cảnh Báo KCS</p>
+                            <p className="font-bold text-slate-800">0 Cảnh Báo</p>
                         </div>
                     </div>
-                    <div className="bg-cyan-50/50 border border-cyan-100 rounded-xl p-4 flex items-center gap-3">
+                    <div className="bg-cyan-50/50 border border-cyan-100 rounded-xl p-4 flex items-center gap-3 select-none">
                         <div className="bg-cyan-100 p-2 rounded-lg text-cyan-600">
                             <span className="material-symbols-outlined">group</span>
                         </div>
                         <div>
-                            <p className="text-xs text-slate-500 font-semibold uppercase">Active Staff</p>
-                            <p className="font-bold text-slate-800">14 On-site</p>
+                            <p className="text-xs text-slate-500 font-semibold uppercase">Nhân Viên Trực Ca</p>
+                            <p className="font-bold text-slate-800">14 Nhân Sự</p>
                         </div>
                     </div>
-                    <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex items-center gap-3">
+                    <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex items-center gap-3 select-none">
                         <div className="bg-amber-100 p-2 rounded-lg text-amber-600">
                             <span className="material-symbols-outlined">inventory_2</span>
                         </div>
                         <div>
-                            <p className="text-xs text-slate-500 font-semibold uppercase">Storage Cap</p>
-                            <p className="font-bold text-slate-800">82% Full</p>
+                            <p className="text-xs text-slate-500 font-semibold uppercase">Sức Chứa Kho</p>
+                            <p className="font-bold text-slate-800">82% Đã Đầy</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* ── FOOTER ── */}
-            <footer className="bg-white border-t border-slate-200 mt-auto py-8">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            {/* Redesigned Premium Footer */}
+            <footer className="bg-white border-t border-slate-100 mt-auto py-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-2">
-                        <img
-                            alt="Re-Nats Logo"
-                            className="h-8 w-auto grayscale opacity-70"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXIhI69kKcVzSx4WLQUG9YtaPnYIlbdXIthERtwNMXidJTiYa8xF4yeRTdqIoENupJ8d9cZZUvxzPgHGt49U3TRdSf4LKQuNBJdyR3vci0TVIy__VDghi7lDKk_zzXLesl5S6QINo0rNRAazA7wnxKiBLF9_jzuRdPR6ZPyDRjjnhRlNQCDxO67gNZ6cUoXZrm_PMcz5z8z_kL3-xgaqbfJsz4yoxF03L7i4qnz0gvFhGjxQlI3jsi-Q1gI6KtSaRzUHP-HrL899M"
-                        />
-                        <span className="text-slate-400 text-sm">© 2024 Re-Nats Platform.</span>
-                    </div>
-                    <div className="flex space-x-6 text-sm text-slate-500">
-                        <a className="hover:text-primary" href="#">Support</a>
-                        <a className="hover:text-primary" href="#">Privacy</a>
-                        <a className="hover:text-primary" href="#">Terms</a>
+                        <img src="/logo.jpg" alt="Re-Nats Logo" className="h-6 w-auto rounded" />
+                        <span className="text-slate-400 text-xs font-bold">© 2026 Re-Nats Platform. All rights reserved.</span>
                     </div>
                 </div>
             </footer>

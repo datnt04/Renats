@@ -55,4 +55,11 @@ export const factoryService = {
 
   getPartnerDetail: (id) =>
     api.get(`/factory/partners/${id}`, { factoryId: FACTORY_ID }),
+
+  // ── Premium Subscription ──
+  getPremiumStatus: () =>
+    api.get('/factory/premium/status', { factoryId: FACTORY_ID }),
+
+  subscribePremium: (plan) =>
+    api.post('/factory/premium/subscribe', { factoryId: FACTORY_ID, plan }),
 };
