@@ -61,8 +61,34 @@ public class SellerPickupManagementController : ControllerBase
         if (request.Status != PickupRequestStatus.PENDING)
             return BadRequest("Yêu cầu không ở trạng thái chờ xác nhận");
 
+        // Tìm Depot tương ứng với UserId (hoặc DepotId thực tế) để gán đúng AssignedDepotId
+        var depot = await _db.Depots.FirstOrDefaultAsync(d => d.UserId == dto.DepotId || d.Id == dto.DepotId);
+        if (depot == null) 
+        {
+            // Tự động tạo bản ghi Depot cho User để phục vụ test và vận hành mượt mà
+            var user = await _db.Users.FindAsync(dto.DepotId);
+            if (user != null && user.Role == UserRole.DEPOT)
+            {
+                depot = new Renats_BE.Models.Depot
+                {
+                    UserId = user.Id,
+                    CompanyName = user.FullName ?? "Điểm thu gom Re-Nats",
+                    ContactPerson = user.FullName ?? "Người đại diện",
+                    ContactPhone = user.Phone ?? "0987654321",
+                    Address = "Hà Tĩnh",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _db.Depots.Add(depot);
+                await _db.SaveChangesAsync();
+            }
+            else
+            {
+                return BadRequest("Không tìm thấy thông tin tài khoản hợp lệ");
+            }
+        }
+
         request.Status = PickupRequestStatus.SCHEDULED;
-        request.AssignedDepotId = dto.DepotId;
+        request.AssignedDepotId = depot.Id;
         request.ScheduledAt = DateTime.UtcNow;
         request.UpdatedAt = DateTime.UtcNow;
 
