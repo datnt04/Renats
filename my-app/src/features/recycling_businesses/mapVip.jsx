@@ -1,61 +1,71 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import HeaderDoanhNghiep from '../../components/layout/header_doanhNghiep/headerDoanhNghiep';
+import { factoryService } from '../../services/factoryService';
 const MapVip = () => {
+    const navigate = useNavigate();
+    const [isPremium, setIsPremium] = useState(false);
+    const [checkingPremium, setCheckingPremium] = useState(true);
+
+    useEffect(() => {
+        factoryService.getPremiumStatus()
+            .then(res => setIsPremium(res?.isPremium || false))
+            .catch(() => setIsPremium(false))
+            .finally(() => setCheckingPremium(false));
+    }, []);
+
     return (
         <div className="font-sans text-slate-900 overflow-hidden bg-slate-50">
             <style>{`
-        .map-container {
-          background-color: #e5e7eb;
-          background-size: cover;
-          background-position: center;
-          position: relative;
-          height: calc(100vh - 80px);
-          width: 100%;
-          overflow: hidden;
-        }
-
-        .map-overlay {
-          background: rgba(226, 232, 240, 0.4);
-          position: absolute;
-          inset: 0;
-        }
-
-        .map-pattern {
-          background-color: #eef2f6;
-          background-image: linear-gradient(#e2e8f0 2px, transparent 2px),
-            linear-gradient(90deg, #e2e8f0 2px, transparent 2px);
-          background-size: 100px 100px;
-        }
-
-        .pin {
-          position: absolute;
-          transform: translate(-50%, -100%);
-          cursor: pointer;
-          transition: all 0.2s ease-out;
-        }
-
-        .pin:hover {
-          transform: translate(-50%, -110%) scale(1.1);
-          z-index: 40;
-        }
-
-        .pin-shadow {
-          width: 20px;
-          height: 6px;
-          background: rgba(0, 0, 0, 0.2);
-          border-radius: 50%;
-          position: absolute;
-          bottom: -2px;
-          left: 50%;
-          transform: translateX(-50%);
-          filter: blur(2px);
-        }
+        .map-container { background-color: #e5e7eb; background-size: cover; background-position: center; position: relative; height: calc(100vh - 80px); width: 100%; overflow: hidden; }
+        .map-overlay { background: rgba(226, 232, 240, 0.4); position: absolute; inset: 0; }
+        .map-pattern { background-color: #eef2f6; background-image: linear-gradient(#e2e8f0 2px, transparent 2px), linear-gradient(90deg, #e2e8f0 2px, transparent 2px); background-size: 100px 100px; }
+        .pin { position: absolute; transform: translate(-50%, -100%); cursor: pointer; transition: all 0.2s ease-out; }
+        .pin:hover { transform: translate(-50%, -110%) scale(1.1); z-index: 40; }
+        .pin-shadow { width: 20px; height: 6px; background: rgba(0, 0, 0, 0.2); border-radius: 50%; position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%); filter: blur(2px); }
       `}</style>
 
             {/* Header dùng chung */}
             <HeaderDoanhNghiep activeTab="map" />
 
-            {/* Main */}
+            {checkingPremium ? (
+                <div className="flex items-center justify-center" style={{ height: 'calc(100vh - 80px)' }}>
+                    <span className="w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></span>
+                </div>
+            ) : !isPremium ? (
+                <div className="relative" style={{ height: 'calc(100vh - 80px)' }}>
+                    <div className="absolute inset-0 map-pattern opacity-60" style={{ filter: 'blur(4px)' }}></div>
+                    <div className="absolute inset-0 flex items-center justify-center p-4 z-10">
+                        <div className="max-w-lg w-full bg-white rounded-3xl shadow-2xl p-10 text-center border border-slate-100 relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary to-yellow-400"></div>
+                            <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-lg">
+                                <span className="material-symbols-outlined text-4xl text-white" style={{ fontVariationSettings: "'FILL' 1" }}>map</span>
+                            </div>
+                            <div className="inline-flex items-center gap-1.5 bg-yellow-100 text-yellow-800 text-xs font-bold px-3 py-1 rounded-full mb-4 border border-yellow-200">
+                                <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+                                Tính năng Premium
+                            </div>
+                            <h2 className="text-2xl font-extrabold text-slate-900 mb-3">Bản đồ Đại lý VIP</h2>
+                            <p className="text-slate-600 mb-6 leading-relaxed text-sm">
+                                Xem vị trí thực tế các kho vựa uy tín, tính khoảng cách, xem lịch sử giao dịch và đặt mua trực tiếp từ bản đồ.
+                            </p>
+                            <ul className="text-left max-w-sm mx-auto mb-8 space-y-2.5">
+                                {['Xem vị trí tất cả kho vựa gần nhất', 'Điểm uy tín & loại hàng trên bản đồ', 'Chỉ đường & kết nối tài xế', 'Đặt mua ngay từ popup bản đồ'].map((item, i) => (
+                                    <li key={i} className="flex items-center text-slate-700">
+                                        <span className="material-symbols-outlined text-green-500 mr-3 text-xl">check_circle</span>
+                                        <span className="font-medium text-sm">{item}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <Link to="/nha-may/premium" className="inline-flex items-center gap-2 bg-primary hover:bg-secondary text-white font-extrabold py-4 px-10 rounded-xl shadow-lg shadow-green-200 transition-all transform hover:-translate-y-1">
+                                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+                                Mua gói Premium
+                            </Link>
+                            <p className="mt-4 text-xs text-slate-400">Thanh toán an toàn • Hủy bất kỳ lúc nào</p>
+                        </div>
+                    </div>
+                </div>
+            ) : (
             <main className="relative w-full h-[calc(100vh-80px)]">
 
                 {/* Filter Bar */}
@@ -80,11 +90,11 @@ const MapVip = () => {
                             </button>
                         </div>
                         <div className="flex bg-slate-100 p-1 rounded-lg flex-shrink-0">
-                            <button className="px-3 py-1.5 text-slate-500 hover:text-slate-800 rounded-md text-sm font-medium flex items-center gap-2 transition-colors">
-                                <span className="material-symbols-outlined text-lg">grid_view</span> List
-                            </button>
+                            <Link to="/recycle/market" className="px-3 py-1.5 text-slate-500 hover:text-slate-800 rounded-md text-sm font-medium flex items-center gap-2 transition-colors">
+                                <span className="material-symbols-outlined text-lg">grid_view</span> Danh sách
+                            </Link>
                             <button className="px-3 py-1.5 bg-white text-slate-800 rounded-md shadow-sm text-sm font-bold flex items-center gap-2">
-                                <span className="material-symbols-outlined text-lg">map</span> Map
+                                <span className="material-symbols-outlined text-lg">map</span> Bản đồ
                             </button>
                         </div>
                     </div>
@@ -263,10 +273,16 @@ const MapVip = () => {
                             </div>
 
                             <div className="flex gap-3">
-                                <button className="flex-1 bg-white border border-slate-200 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
+                                <button
+                                    onClick={() => navigate('/nha-may/doi-tac/1')}
+                                    className="flex-1 bg-white border border-slate-200 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm cursor-pointer"
+                                >
                                     Chi tiết
                                 </button>
-                                <button className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
+                                <button
+                                    onClick={() => navigate('/recycle/order-process')}
+                                    className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                >
                                     <span>Chốt đơn / Đặt mua</span>
                                     <span className="material-symbols-outlined text-sm">arrow_forward</span>
                                 </button>
@@ -301,6 +317,7 @@ const MapVip = () => {
                 </div>
 
             </main>
+            )}
         </div>
     );
 };
