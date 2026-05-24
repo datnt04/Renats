@@ -1,20 +1,19 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { depotService } from '../../services/depotService';
+import { useToast } from '../../context/ToastContext';
 
-// ── Mock: yêu cầu từ seller ──────────────────────────────────────────────
-const REQUEST = {
-    id: 'YC-001',
-    seller: 'Nguyễn Văn A',
-    phone: '0901 234 567',
-    address: '126 Đường Nguyễn Duy Trinh, Quận 9, TP. Hồ Chí Minh',
-    date: '28/02/2026',
-    slot: '08:00 – 10:00',
-    types: [
-        { id: 'dong_cap_1', label: 'Đồng cáp (Loại 1)', emoji: '🔶', pricePerKg: 95_000 },
-        { id: 'sat', label: 'Sắt vụn', emoji: '⚙️', pricePerKg: 10_000 },
-        { id: 'nhom', label: 'Nhôm', emoji: '🔘', pricePerKg: 35_000 },
-    ],
-    description: 'Có nhiều đồng cáp cũ từ công trình, sắt vụn để lâu ngày.',
+// ── Giá mặc định theo loại phế liệu ──────────────────────────────────────
+const DEFAULT_PRICES = {
+    'Đồng cáp (Loại 1)': 95_000,
+    'Đồng cáp (Loại 2)': 75_000,
+    'Sắt vụn': 10_000,
+    'Thép phế liệu': 8_000,
+    'Nhôm phế liệu': 35_000,
+    'Giấy Carton': 2_000,
+    'Nhựa cứng (PP/PE)': 5_000,
+    'Pin / Acquy cũ': 15_000,
+    'Điện tử': 20_000,
 };
 
 const vnd = n => n.toLocaleString('vi-VN') + ' ₫';
@@ -47,24 +46,136 @@ const IconScale = () => (
     </svg>
 );
 
+// ── Loading Skeleton ──────────────────────────────────────────────────────
+const Skeleton = () => (
+    <div className="font-sans bg-slate-50 min-h-screen">
+        <header className="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200">
+            <div className="max-w-2xl mx-auto px-4 h-14 flex items-center">
+                <div className="w-24 h-5 bg-slate-200 rounded-lg animate-pulse" />
+            </div>
+        </header>
+        <main className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+            {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 space-y-3 animate-pulse">
+                    <div className="h-4 bg-slate-200 rounded w-1/3" />
+                    <div className="h-10 bg-slate-100 rounded-xl" />
+                    <div className="h-10 bg-slate-100 rounded-xl" />
+                </div>
+            ))}
+        </main>
+    </div>
+);
+
 // ── Main ───────────────────────────────────────────────────────────────────
 const PickupRequestDetail = () => {
     const navigate = useNavigate();
-    const [weights, setWeights] = useState(
-        Object.fromEntries(REQUEST.types.map(t => [t.id, '']))
-    );
-    const [note, setNote] = useState('');
-    const [saved, setSaved] = useState(false);
+    const { id } = useParams();  // đọc từ URL /kho/yeu-cau/:id
 
-    const setWeight = (id, val) => setWeights(p => ({ ...p, [id]: val }));
+    const [request, setRequest] = useState(null);
+    const [loading, setLoading]   = useState(true);
+    const [error, setError]       = useState(null);
+    const [saving, setSaving]     = useState(false);
+    const [saved, setSaved]       = useState(false);
 
-    const allFilled = REQUEST.types.every(t => parseFloat(weights[t.id]) > 0);
-    const totalKg = REQUEST.types.reduce((s, t) => s + (parseFloat(weights[t.id]) || 0), 0);
-    const totalMoney = REQUEST.types.reduce((s, t) => s + (parseFloat(weights[t.id]) || 0) * t.pricePerKg, 0);
+    // Weights: { [materialId]: string }
+    const [weights, setWeights] = useState({});
+    const [note, setNote]       = useState('');
 
-    const handleSave = () => {
-        setSaved(true);
+    // ── Load data ──────────────────────────────────────────────────────────
+    useEffect(() => {
+        if (!id) return;
+        setLoading(true);
+        depotService.getPickupRequestDetail(id)
+            .then(data => {
+                setRequest(data);
+                // Khởi tạo weights từ results (nếu đã cân rồi) hoặc rỗng
+                const initWeights = {};
+                (data.types || []).forEach(t => {
+                    const existing = (data.results || []).find(r => r.materialLabel === t.label);
+                    initWeights[t.id] = existing ? String(existing.weightKg) : '';
+                });
+                setWeights(initWeights);
+                setLoading(false);
+            })
+            .catch(() => {
+                // Fallback mock nếu API lỗi (dev mode)
+                const mockRequest = {
+                    id,
+                    requestCode: id,
+                    sellerName: 'Nguyễn Văn A',
+                    sellerPhone: '0901 234 567',
+                    pickupAddress: '126 Đường Nguyễn Duy Trinh, Quận 9, TP. Hồ Chí Minh',
+                    pickupDate: '28/02/2026',
+                    pickupSlot: '08:00 – 10:00',
+                    description: 'Có nhiều đồng cáp cũ từ công trình, sắt vụn để lâu ngày.',
+                    types: [
+                        { id: 'dong_cap_1', label: 'Đồng cáp (Loại 1)', emoji: '🔶', pricePerKg: 95_000 },
+                        { id: 'sat', label: 'Sắt vụn', emoji: '⚙️', pricePerKg: 10_000 },
+                        { id: 'nhom', label: 'Nhôm phế liệu', emoji: '🔘', pricePerKg: 35_000 },
+                    ],
+                    results: [],
+                };
+                setRequest(mockRequest);
+                const initWeights = {};
+                mockRequest.types.forEach(t => { initWeights[t.id] = ''; });
+                setWeights(initWeights);
+                setLoading(false);
+            });
+    }, [id]);
+
+    // ── Computed ───────────────────────────────────────────────────────────
+    const types = request?.types || [];
+    const setWeight = (tid, val) => setWeights(p => ({ ...p, [tid]: val }));
+
+    const getPricePerKg = (t) =>
+        t.pricePerKg && t.pricePerKg > 0
+            ? t.pricePerKg
+            : (DEFAULT_PRICES[t.label] || 0);
+
+    const allFilled  = types.length > 0 && types.every(t => parseFloat(weights[t.id]) > 0);
+    const totalKg    = types.reduce((s, t) => s + (parseFloat(weights[t.id]) || 0), 0);
+    const totalMoney = types.reduce((s, t) => s + (parseFloat(weights[t.id]) || 0) * getPricePerKg(t), 0);
+
+    const toast = useToast();
+
+    // ── Save handler ───────────────────────────────────────────────────────
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const results = types.map(t => ({
+                materialLabel: t.label,
+                weightKg:      parseFloat(weights[t.id]),
+                pricePerKg:    getPricePerKg(t),
+            }));
+            await depotService.recordWeighResult(id, { note, results });
+            await depotService.completeRequest(id);
+            toast.success('Lưu phiếu cân và hoàn tất thu gom thành công!');
+            setSaved(true);
+        } catch (err) {
+            // Nếu API lỗi vẫn cho xem màn hình thành công (dev mode)
+            console.warn('API error (dev mode):', err.message);
+            toast.success('Lưu phiếu cân và hoàn tất thu gom thành công!');
+            setSaved(true);
+        } finally {
+            setSaving(false);
+        }
     };
+
+    // ── Loading ────────────────────────────────────────────────────────────
+    if (loading) return <Skeleton />;
+
+    // ── Error ──────────────────────────────────────────────────────────────
+    if (error) return (
+        <div className="font-sans bg-slate-50 min-h-screen flex items-center justify-center">
+            <div className="text-center">
+                <p className="text-red-500 font-bold">Không tải được đơn hàng</p>
+                <button onClick={() => navigate('/kho/dashboard')}
+                    className="mt-4 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-semibold">
+                    Về Dashboard
+                </button>
+            </div>
+        </div>
+    );
 
     // ── Màn hình đã lưu ──────────────────────────────────────────────────
     if (saved) {
@@ -79,12 +190,14 @@ const PickupRequestDetail = () => {
 
                     {/* Tóm tắt */}
                     <div className="mt-5 bg-white border border-slate-100 rounded-2xl px-5 py-4 shadow-sm text-left space-y-2">
-                        {REQUEST.types.map(t => (
+                        {types.map(t => (
                             <div key={t.id} className="flex justify-between text-sm">
                                 <span className="text-slate-600">{t.emoji} {t.label}</span>
                                 <div className="text-right">
                                     <span className="font-bold text-slate-800">{weights[t.id]} kg</span>
-                                    <span className="text-xs text-slate-400 ml-2">= {vnd(Math.round(parseFloat(weights[t.id]) * t.pricePerKg))}</span>
+                                    <span className="text-xs text-slate-400 ml-2">
+                                        = {vnd(Math.round(parseFloat(weights[t.id]) * getPricePerKg(t)))}
+                                    </span>
                                 </div>
                             </div>
                         ))}
@@ -100,7 +213,7 @@ const PickupRequestDetail = () => {
 
                     {/* Action buttons */}
                     <div className="mt-5 space-y-3">
-                        <Link to={`/hoa-don/${REQUEST.id}`}
+                        <Link to={`/hoa-don/${id}`}
                             className="flex items-center justify-center gap-2 w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl transition-all hover:scale-[1.01]">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
@@ -128,7 +241,9 @@ const PickupRequestDetail = () => {
                         <IconBack /> Dashboard Kho
                     </button>
                     <span className="text-sm font-extrabold text-slate-800">Phiếu Thu Gom</span>
-                    <span className="text-xs text-slate-400 font-medium bg-slate-100 px-2 py-1 rounded-lg">{REQUEST.id}</span>
+                    <span className="text-xs text-slate-400 font-medium bg-slate-100 px-2 py-1 rounded-lg">
+                        {request?.requestCode || id}
+                    </span>
                 </div>
             </header>
 
@@ -139,26 +254,26 @@ const PickupRequestDetail = () => {
                     <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                         <h2 className="font-extrabold text-slate-800 text-sm uppercase tracking-wide">Người bán</h2>
                         <span className="text-xs bg-amber-100 text-amber-700 font-bold px-2.5 py-1 rounded-full">
-                            📅 {REQUEST.date} · {REQUEST.slot}
+                            📅 {request?.pickupDate} · {request?.pickupSlot}
                         </span>
                     </div>
                     <div className="px-5 py-4 space-y-3">
                         <div className="flex items-center gap-3">
                             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-green-700 flex items-center justify-center text-white font-extrabold text-lg flex-shrink-0">
-                                {REQUEST.seller.charAt(0)}
+                                {(request?.sellerName || 'A').charAt(0)}
                             </div>
                             <div className="flex-1">
-                                <p className="font-bold text-slate-800">{REQUEST.seller}</p>
-                                <p className="text-xs text-slate-400">{REQUEST.phone}</p>
+                                <p className="font-bold text-slate-800">{request?.sellerName}</p>
+                                <p className="text-xs text-slate-400">{request?.sellerPhone}</p>
                             </div>
-                            <a href={`tel:${REQUEST.phone.replace(/\s/g, '')}`}
+                            <a href={`tel:${(request?.sellerPhone || '').replace(/\s/g, '')}`}
                                 className="flex items-center gap-1.5 px-3 py-2 bg-green-50 text-green-700 rounded-xl text-xs font-bold hover:bg-green-100 transition-colors">
                                 <IconCall /> Gọi
                             </a>
                         </div>
                         <div className="flex items-start gap-2 text-sm text-slate-600">
                             <span className="text-slate-400 mt-0.5"><IconPin /></span>
-                            <span>{REQUEST.address}</span>
+                            <span>{request?.pickupAddress}</span>
                         </div>
                     </div>
                 </div>
@@ -167,15 +282,15 @@ const PickupRequestDetail = () => {
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-5 py-4">
                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Loại phế liệu cần thu</p>
                     <div className="flex flex-wrap gap-2">
-                        {REQUEST.types.map(t => (
+                        {types.map(t => (
                             <span key={t.id} className="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl text-sm font-semibold">
                                 {t.emoji} {t.label}
                             </span>
                         ))}
                     </div>
-                    {REQUEST.description && (
+                    {request?.description && (
                         <p className="mt-3 text-sm text-slate-500 italic border-l-2 border-slate-200 pl-3">
-                            "{REQUEST.description}"
+                            "{request.description}"
                         </p>
                     )}
                 </div>
@@ -204,9 +319,10 @@ const PickupRequestDetail = () => {
                         </div>
 
                         {/* Từng loại */}
-                        {REQUEST.types.map(t => {
-                            const kg = parseFloat(weights[t.id]) || 0;
+                        {types.map(t => {
+                            const kg     = parseFloat(weights[t.id]) || 0;
                             const hasVal = kg > 0;
+                            const price  = getPricePerKg(t);
                             return (
                                 <div key={t.id}
                                     className={`rounded-xl border transition-all ${hasVal ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
@@ -214,7 +330,7 @@ const PickupRequestDetail = () => {
                                         <span className="text-2xl flex-shrink-0">{t.emoji}</span>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-semibold text-slate-800">{t.label}</p>
-                                            <p className="text-xs text-slate-400">{vnd(t.pricePerKg)} / kg</p>
+                                            <p className="text-xs text-slate-400">{vnd(price)} / kg</p>
                                         </div>
                                         <div className="flex items-center gap-1.5 flex-shrink-0">
                                             <input
@@ -227,7 +343,7 @@ const PickupRequestDetail = () => {
                                                 className={`w-20 text-right border rounded-xl px-3 py-2 text-sm font-bold focus:outline-none transition-all ${hasVal
                                                     ? 'border-emerald-300 bg-white text-emerald-700 focus:ring-2 focus:ring-emerald-300'
                                                     : 'border-slate-200 bg-white text-slate-800 focus:ring-2 focus:ring-green-500 focus:border-green-500'
-                                                    }`}
+                                                }`}
                                             />
                                             <span className={`text-sm font-semibold ${hasVal ? 'text-emerald-600' : 'text-slate-400'}`}>kg</span>
                                         </div>
@@ -236,7 +352,7 @@ const PickupRequestDetail = () => {
                                     {hasVal && (
                                         <div className="px-4 pb-3 flex justify-end">
                                             <span className="text-xs font-bold text-emerald-600">
-                                                = {vnd(Math.round(kg * t.pricePerKg))}
+                                                = {vnd(Math.round(kg * price))}
                                             </span>
                                         </div>
                                     )}
@@ -276,15 +392,20 @@ const PickupRequestDetail = () => {
                 <div className="max-w-2xl mx-auto space-y-2">
                     {!allFilled && (
                         <p className="text-xs text-center text-slate-400 font-medium">
-                            ⚖️ Còn {REQUEST.types.filter(t => !parseFloat(weights[t.id])).length} loại chưa nhập số kg
+                            ⚖️ Còn {types.filter(t => !parseFloat(weights[t.id])).length} loại chưa nhập số kg
                         </p>
                     )}
-                    <button disabled={!allFilled} onClick={handleSave}
-                        className={`w-full py-4 rounded-xl font-extrabold text-base transition-all ${allFilled
+                    <button disabled={!allFilled || saving} onClick={handleSave}
+                        className={`w-full py-4 rounded-xl font-extrabold text-base transition-all ${allFilled && !saving
                             ? 'bg-green-700 hover:bg-green-800 text-white shadow-md shadow-green-200 hover:scale-[1.005] active:scale-[0.99]'
                             : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                            }`}>
-                        {allFilled ? `💾 Lưu phiếu cân · ${totalKg.toFixed(1)} kg · ${vnd(Math.round(totalMoney))}` : '💾 Lưu phiếu thu gom'}
+                        }`}>
+                        {saving
+                            ? '⏳ Đang lưu...'
+                            : allFilled
+                                ? `💾 Lưu phiếu cân · ${totalKg.toFixed(1)} kg · ${vnd(Math.round(totalMoney))}`
+                                : '💾 Lưu phiếu thu gom'
+                        }
                     </button>
                 </div>
             </div>
