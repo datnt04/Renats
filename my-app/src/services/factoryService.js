@@ -1,47 +1,57 @@
 import { api } from './api';
 
-// Hardcoded factoryId for dev – thay bằng auth context sau
-const FACTORY_ID = '00000000-0000-0000-0000-000000000001';
+// ── Lấy factoryId từ session (lưu khi login) ──────────────────────────────────
+// Ưu tiên: session.factoryId → fallback dev ID nếu chưa có (xoá khi auth hoàn chỉnh)
+function getFactoryId() {
+  try {
+    const raw = localStorage.getItem('renats_user');
+    const user = raw ? JSON.parse(raw) : null;
+    if (user?.factoryId) return user.factoryId;
+  } catch { /* ignore */ }
+  // Fallback: dùng ID seeded để test khi auth chưa trả factoryId
+  // TODO: Xoá dòng này sau khi authService.saveSession() có factoryId
+  return '00000000-0000-0000-0000-000000000001';
+}
 
 export const factoryService = {
   // ── Dashboard ──
   getKpis: () =>
-    api.get('/factory/dashboard/kpis', { factoryId: FACTORY_ID }),
+    api.get('/factory/dashboard/kpis', { factoryId: getFactoryId() }),
 
   getRecentTransactions: () =>
-    api.get('/factory/dashboard/transactions', { factoryId: FACTORY_ID }),
+    api.get('/factory/dashboard/transactions', { factoryId: getFactoryId() }),
 
   getMaterialBreakdown: () =>
-    api.get('/factory/dashboard/material-breakdown', { factoryId: FACTORY_ID }),
+    api.get('/factory/dashboard/material-breakdown', { factoryId: getFactoryId() }),
 
   getChartData: (range = 'week') =>
-    api.get('/factory/dashboard/chart', { factoryId: FACTORY_ID, range }),
+    api.get('/factory/dashboard/chart', { factoryId: getFactoryId(), range }),
 
   // ── Market ──
   getBatches: (params = {}) =>
-    api.get('/factory/market/batches', { factoryId: FACTORY_ID, ...params }),
+    api.get('/factory/market/batches', { factoryId: getFactoryId(), ...params }),
 
   getBatchDetail: (id) =>
-    api.get(`/factory/market/batches/${id}`, { factoryId: FACTORY_ID }),
+    api.get(`/factory/market/batches/${id}`, { factoryId: getFactoryId() }),
 
   // ── Orders ──
   placeBid: (batchId, bidPrice, note) =>
     api.post('/factory/orders/bid', {
-      batchId, factoryId: FACTORY_ID, bidPrice, note,
+      batchId, factoryId: getFactoryId(), bidPrice, note,
     }),
 
   confirmOrder: (bidId) =>
     api.post('/factory/orders/confirm', { bidId }),
 
   getOrders: (status) =>
-    api.get('/factory/orders', { factoryId: FACTORY_ID, ...(status ? { status } : {}) }),
+    api.get('/factory/orders', { factoryId: getFactoryId(), ...(status ? { status } : {}) }),
 
   getOrderDetail: (id) =>
     api.get(`/factory/orders/${id}`),
 
   // ── Weighing/KCS ──
   getWeighingQueue: () =>
-    api.get('/factory/weighing/queue', { factoryId: FACTORY_ID }),
+    api.get('/factory/weighing/queue', { factoryId: getFactoryId() }),
 
   completeWeighing: (orderId, data) =>
     api.post(`/factory/weighing/${orderId}/complete`, data),
@@ -51,15 +61,15 @@ export const factoryService = {
 
   // ── Partners ──
   getPartners: () =>
-    api.get('/factory/partners', { factoryId: FACTORY_ID }),
+    api.get('/factory/partners', { factoryId: getFactoryId() }),
 
   getPartnerDetail: (id) =>
-    api.get(`/factory/partners/${id}`, { factoryId: FACTORY_ID }),
+    api.get(`/factory/partners/${id}`, { factoryId: getFactoryId() }),
 
   // ── Premium Subscription ──
   getPremiumStatus: () =>
-    api.get('/factory/premium/status', { factoryId: FACTORY_ID }),
+    api.get('/factory/premium/status', { factoryId: getFactoryId() }),
 
   subscribePremium: (plan) =>
-    api.post('/factory/premium/subscribe', { factoryId: FACTORY_ID, plan }),
+    api.post('/factory/premium/subscribe', { factoryId: getFactoryId(), plan }),
 };

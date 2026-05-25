@@ -167,8 +167,8 @@ public static class DataSeeder
             Province       = "Bình Dương",
             ContactPerson  = "Nguyễn Văn Minh",
             ContactPhone   = "0901234567",
-            IsPremium      = true,
-            PremiumExpiresAt = DateTime.UtcNow.AddYears(1),
+            IsPremium      = false,         // Mặc định không premium (như nhà máy mới đăng ký)
+            PremiumExpiresAt = null,
             CreatedAt      = DateTime.UtcNow
         };
 

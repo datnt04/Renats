@@ -84,6 +84,37 @@ const OrderConfirm = () => {
             {/* Redesigned Premium Unified Header */}
             <HeaderDoanhNghiep activeTab="market" />
 
+            {/* Visual Stepper Guideline for Recycler Lifecycle */}
+            <div className="bg-white border-b border-slate-100 py-6 px-4">
+                <div className="max-w-5xl mx-auto">
+                    <div className="grid grid-cols-4 gap-4 text-center">
+                        <div className="flex flex-col items-center relative">
+                            <div className="w-8 h-8 rounded-full bg-green-700 text-white flex items-center justify-center font-bold text-sm mb-2 shadow-md ring-4 ring-green-100">1</div>
+                            <span className="text-xs font-black text-green-700">Chốt thầu / Đặt mua</span>
+                            {/* Connector line indicators */}
+                            <div className="hidden md:block absolute right-[-50%] top-4 w-[100%] h-0.5 bg-slate-200 -z-10" />
+                        </div>
+                        <div className="flex flex-col items-center relative">
+                            <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-sm mb-2">2</div>
+                            <span className="text-xs font-bold text-slate-400">Vận chuyển đến</span>
+                            <div className="hidden md:block absolute left-[-50%] top-4 w-[100%] h-0.5 bg-slate-200 -z-10" />
+                            <div className="hidden md:block absolute right-[-50%] top-4 w-[100%] h-0.5 bg-slate-200 -z-10" />
+                        </div>
+                        <div className="flex flex-col items-center relative">
+                            <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-sm mb-2">3</div>
+                            <span className="text-xs font-bold text-slate-400">Kiểm định & Trạm cân</span>
+                            <div className="hidden md:block absolute left-[-50%] top-4 w-[100%] h-0.5 bg-slate-200 -z-10" />
+                            <div className="hidden md:block absolute right-[-50%] top-4 w-[100%] h-0.5 bg-slate-200 -z-10" />
+                        </div>
+                        <div className="flex flex-col items-center relative">
+                            <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-sm mb-2">4</div>
+                            <span className="text-xs font-bold text-slate-400">Xuất hóa đơn & Chốt</span>
+                            <div className="hidden md:block absolute left-[-50%] top-4 w-[100%] h-0.5 bg-slate-200 -z-10" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* ── MAIN CONTENT ── */}
             <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 <div className="mb-8">
@@ -98,6 +129,20 @@ const OrderConfirm = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Details Column */}
                     <div className="lg:col-span-2 space-y-6">
+                        {/* Hướng dẫn chốt đơn thầu */}
+                        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 flex items-start gap-4 shadow-sm">
+                            <span className="text-2xl mt-0.5 shrink-0">💡</span>
+                            <div>
+                                <h4 className="font-bold text-blue-900 text-sm mb-1">Hướng dẫn đấu thầu & Chốt đơn:</h4>
+                                <ul className="text-xs text-blue-700 space-y-1.5 list-disc pl-4 mt-2">
+                                    <li><strong>Kiểm tra thông số:</strong> Hãy xem kỹ độ sạch, độ ẩm và hình ảnh thực tế của lô hàng từ vựa.</li>
+                                    <li><strong>Mức giá thu mua:</strong> Đơn giá mặc định là giá đề xuất từ vựa. Bạn có thể tự do điều chỉnh tăng/giảm giá thầu tùy thương lượng.</li>
+                                    <li><strong>Ghi chú bổ sung:</strong> Hãy nhập thêm các yêu cầu vận chuyển hoặc hình thức thanh toán đặc thầu.</li>
+                                    <li><strong>Tiến trình tiếp theo:</strong> Sau khi gửi thầu, vựa phế liệu sẽ phản hồi chấp nhận hoặc từ chối đơn hàng của bạn.</li>
+                                </ul>
+                            </div>
+                        </div>
+
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                             <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                                 <span className="material-symbols-outlined text-primary">shopping_bag</span>
