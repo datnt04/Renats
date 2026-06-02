@@ -1,16 +1,14 @@
 import { api } from './api';
 
-// ── Lấy factoryId từ session (lưu khi login) ──────────────────────────────────
-// Ưu tiên: session.factoryId → fallback dev ID nếu chưa có (xoá khi auth hoàn chỉnh)
+// ── Lấy factoryId từ session (lưu khi login/register) ─────────────────────────
 function getFactoryId() {
   try {
     const raw = localStorage.getItem('renats_user');
     const user = raw ? JSON.parse(raw) : null;
-    if (user?.factoryId) return user.factoryId;
+    // profileId được trả từ BE sau khi login/register (factoryId thật trong DB)
+    if (user?.profileId) return user.profileId;
   } catch { /* ignore */ }
-  // Fallback: dùng ID seeded để test khi auth chưa trả factoryId
-  // TODO: Xoá dòng này sau khi authService.saveSession() có factoryId
-  return '00000000-0000-0000-0000-000000000001';
+  return null; // Không fallback hardcoded nữa → BE sẽ trả 400/404 nếu thiếu ID
 }
 
 export const factoryService = {

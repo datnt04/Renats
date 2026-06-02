@@ -279,17 +279,30 @@ public class AuthController : ControllerBase
 
     /// <summary>
     /// Tạo JWT Token chuẩn có chữ ký (Signed JWT) và đóng gói AuthResponse.
+    /// Trả thêm profileId (factoryId / depotId / ...) để FE không cần dùng fallback hardcoded.
     /// </summary>
     private AuthResponse BuildAuthResponse(ModelUser user)
     {
         var token = GenerateJwtToken(user);
+
+        // Lấy profileId tương ứng với role
+        Guid? profileId = user.Role switch
+        {
+            UserRole.FACTORY => _db.Factories.Where(f => f.UserId == user.Id).Select(f => (Guid?)f.Id).FirstOrDefault(),
+            UserRole.DEPOT   => _db.Depots.Where(d => d.UserId == user.Id).Select(d => (Guid?)d.Id).FirstOrDefault(),
+            UserRole.SELLER  => _db.Sellers.Where(s => s.UserId == user.Id).Select(s => (Guid?)s.Id).FirstOrDefault(),
+            UserRole.DRIVER  => _db.Drivers.Where(d => d.UserId == user.Id).Select(d => (Guid?)d.Id).FirstOrDefault(),
+            _ => null
+        };
+
         return new AuthResponse
         {
-            Token    = token,
-            Role     = user.Role.ToString(),
-            UserId   = user.Id,
-            FullName = user.FullName,
-            Email    = user.Email,
+            Token     = token,
+            Role      = user.Role.ToString(),
+            UserId    = user.Id,
+            FullName  = user.FullName,
+            Email     = user.Email,
+            ProfileId = profileId,
         };
     }
 
