@@ -120,11 +120,13 @@ logs/
 *.key
 *.p12
 
-# appsettings.json        → KHÔNG commit (chứa secrets thật)
+# appsettings.json → KHÔNG commit lên git, mỗi người giữ file riêng của mình.
+# Dùng: git rm --cached để untrack nếu đã lỡ commit trước đó.
 appsettings.json
 appsettings.Development.json
 appsettings.Production.json
 appsettings.Staging.json
+
 
 # ══════════════════════════════════════════════
 #  UPLOAD FILES
