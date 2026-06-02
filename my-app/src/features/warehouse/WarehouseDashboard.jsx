@@ -989,13 +989,32 @@ const PageProfile = () => {
             return;
         }
         navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                setForm(prev => ({
-                    ...prev,
-                    latitude: pos.coords.latitude,
-                    longitude: pos.coords.longitude
-                }));
-                alert('Đã lấy tọa độ GPS hiện tại thành công! Nhấn "Lưu hồ sơ" để lưu lại.');
+            async (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                try {
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=vi`
+                    );
+                    const data = await res.json();
+                    const addressStr = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                    
+                    setForm(prev => ({
+                        ...prev,
+                        address: addressStr,
+                        latitude: lat,
+                        longitude: lng
+                    }));
+                    alert('Đã lấy tọa độ GPS và phân giải địa chỉ thành công! Nhấn "Lưu hồ sơ" để lưu lại.');
+                } catch (err) {
+                    console.error('Lỗi phân giải vị trí:', err);
+                    setForm(prev => ({
+                        ...prev,
+                        latitude: lat,
+                        longitude: lng
+                    }));
+                    alert('Đã lấy tọa độ GPS thành công! Nhấn "Lưu hồ sơ" để lưu lại.');
+                }
             },
             () => {
                 alert('Không thể truy cập vị trí. Hãy cấp quyền truy cập GPS.');
