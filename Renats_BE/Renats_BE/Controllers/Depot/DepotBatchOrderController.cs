@@ -141,6 +141,55 @@ public class DepotBatchOrderController : ControllerBase
         });
     }
 
+    // PATCH /api/depot/batch-orders/{id}/cancel — Hủy lô (chỉ khi chưa có nhà máy xác nhận)
+    [HttpPatch("{id}/cancel")]
+    public async Task<IActionResult> CancelBatch(Guid id)
+    {
+        var userIdClaim = User.FindFirst("sub")?.Value
+                       ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(userIdClaim, out var userId)) return Unauthorized();
+
+        var depot = await _db.Depots.FirstOrDefaultAsync(d => d.UserId == userId);
+        if (depot is null) return NotFound("Không tìm thấy thông tin kho");
+
+        var batch = await _db.InventoryBatches.FirstOrDefaultAsync(b => b.Id == id && b.DepotId == depot.Id);
+        if (batch is null) return NotFound("Không tìm thấy lô hàng");
+
+        // Chỉ hủy được khi chưa có nhà máy xác nhận (DRAFT, LISTED, BIDDING)
+        if (batch.Status == BatchStatus.ACCEPTED || batch.Status == BatchStatus.READY_FOR_PICKUP
+            || batch.Status == BatchStatus.IN_PROGRESS || batch.Status == BatchStatus.DELIVERED
+            || batch.Status == BatchStatus.VERIFIED)
+            return BadRequest("Không thể hủy lô đã được nhà máy xác nhận hoặc đang vận chuyển");
+
+        batch.Status = BatchStatus.CANCELLED;
+        batch.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = "Đã hủy lô hàng thành công" });
+    }
+
+    // GET /api/depot/batch-orders/active-material-types — Lấy danh sách loại vật liệu đang có lô hoạt động
+    [HttpGet("active-material-types")]
+    public async Task<IActionResult> GetActiveMaterialTypes()
+    {
+        var userIdClaim = User.FindFirst("sub")?.Value
+                       ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(userIdClaim, out var userId)) return Unauthorized();
+
+        var depot = await _db.Depots.FirstOrDefaultAsync(d => d.UserId == userId);
+        if (depot is null) return Ok(new List<string>());
+
+        // Những trạng thái đang hoạt động (chưa bị hủy/chưa xong)
+        var activeStatuses = new[] { BatchStatus.DRAFT, BatchStatus.LISTED, BatchStatus.BIDDING, BatchStatus.ACCEPTED, BatchStatus.READY_FOR_PICKUP, BatchStatus.IN_PROGRESS };
+        var activeTypes = await _db.InventoryBatches
+            .Where(b => b.DepotId == depot.Id && activeStatuses.Contains(b.Status))
+            .Select(b => b.MaterialType.ToString())
+            .Distinct()
+            .ToListAsync();
+
+        return Ok(activeTypes);
+    }
+
     public class CreateBatchDto
     {
         public string WasteType       { get; set; } = string.Empty;

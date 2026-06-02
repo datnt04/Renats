@@ -32,9 +32,19 @@ async function request(path, options = {}) {
 
 export const api = {
   get: (path, params, options = {}) => {
-    const url = params
-      ? `${path}?${new URLSearchParams(params).toString()}`
-      : path;
+    let url = path;
+    if (params) {
+      const cleanParams = {};
+      Object.entries(params).forEach(([key, val]) => {
+        if (val !== null && val !== undefined && val !== 'null' && val !== 'undefined' && val !== '') {
+          cleanParams[key] = val;
+        }
+      });
+      const search = new URLSearchParams(cleanParams).toString();
+      if (search) {
+        url = `${path}?${search}`;
+      }
+    }
     return request(url, options);
   },
   post: (path, body, options = {}) =>

@@ -44,6 +44,12 @@ export const depotService = {
   createBatchOrder: (data) =>
     api.post('/depot/batch-orders', { ...data, depotId: getDepotIdFromSession() }),
 
+  cancelBatchOrder: (id) =>
+    api.patch(`/depot/batch-orders/${id}/cancel`),
+
+  getActiveMaterialTypes: () =>
+    api.get('/depot/batch-orders/active-material-types'),
+
   // ── Invoices ──────────────────────────────────────────────────────────────
   getInvoices: () =>
     api.get('/depot/invoices'),

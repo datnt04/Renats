@@ -64,6 +64,7 @@ const Sidebar = ({ active, setActive, newRequestsCount }) => {
             label: 'NGHIỆP VỤ',
             items: [
                 { key: 'pickup', label: 'Phiếu thu gom', icon: IcoClipboard },
+                { key: 'batchManage', label: 'Quản lý lô xuất', icon: IcoBox },
                 { key: 'batch', label: 'Tạo lô xuất', icon: IcoTruck, isLink: '/kho/tao-lo' },
                 { key: 'invoice', label: 'Hóa đơn', icon: IcoDoc },
             ],
@@ -793,6 +794,105 @@ const PageReport = ({ inventoryList, outboundRecent }) => {
     );
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// PAGE BATCH MANAGEMENT (QUẢN LÝ LÔ XUẤT)
+// ─────────────────────────────────────────────────────────────────────────
+const PageBatchManagement = ({ pickupList: batchList, onReload }) => {
+    const [cancelling, setCancelling] = React.useState(null);
+
+    const handleCancel = async (id) => {
+        if (!window.confirm('Bạn có chắc muốn hủy lô hàng này không?')) return;
+        setCancelling(id);
+        try {
+            await depotService.cancelBatchOrder(id);
+            alert('Đã hủy lô hàng thành công!');
+            if (onReload) onReload();
+        } catch (err) {
+            alert('Lỗi hủy lô: ' + (err.message || 'Vui lòng thử lại'));
+        } finally {
+            setCancelling(null);
+        }
+    };
+
+    const canCancel = (status) => ['DRAFT','LISTED','BIDDING'].includes(status);
+
+    return (
+        <div className="max-w-5xl space-y-4">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="font-bold text-slate-800 text-lg">Quản lý lô xuất</h2>
+                    <p className="text-sm text-slate-400 mt-0.5">Theo dõi trạng thái các lô đã đăng bán. Có thể hủy trước khi nhà máy xác nhận.</p>
+                </div>
+                <Link to="/kho/tao-lo" className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-xl hover:bg-green-700 transition-colors">
+                    <span>+</span> Tạo lô mới
+                </Link>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <table className="w-full text-left">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs font-bold uppercase">
+                        <tr>
+                            <th className="px-5 py-3">Mã lô</th>
+                            <th className="px-5 py-3">Loại vật liệu</th>
+                            <th className="px-5 py-3">Khối lượng</th>
+                            <th className="px-5 py-3">Đơn giá</th>
+                            <th className="px-5 py-3">Nhà máy mua</th>
+                            <th className="px-5 py-3">Ngày tạo</th>
+                            <th className="px-5 py-3">Trạng thái</th>
+                            <th className="px-5 py-3 text-right">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {batchList.map(batch => {
+                            const st = STATUS_OUT[batch.status] || { label: batch.status, cls: 'bg-slate-100 text-slate-600' };
+                            const cancellable = canCancel(batch.status);
+                            return (
+                                <tr key={batch.id} className="hover:bg-slate-50 transition-colors text-sm">
+                                    <td className="px-5 py-4 font-semibold text-slate-800">{batch.batchCode}</td>
+                                    <td className="px-5 py-4 text-slate-600">{batch.materialType}</td>
+                                    <td className="px-5 py-4 text-slate-700 font-medium">
+                                        {batch.actualKg ? `${batch.actualKg} kg` : `${batch.estimatedKg} kg`}
+                                    </td>
+                                    <td className="px-5 py-4 text-slate-600">
+                                        {batch.unitPrice ? `${vnd(batch.unitPrice)}/kg` : '—'}
+                                    </td>
+                                    <td className="px-5 py-4 text-slate-700">{batch.buyer || <span className="text-slate-300">Chưa có</span>}</td>
+                                    <td className="px-5 py-4 text-slate-400">
+                                        {batch.createdAt ? new Date(batch.createdAt).toLocaleDateString('vi-VN') : '—'}
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.cls}`}>{st.label}</span>
+                                    </td>
+                                    <td className="px-5 py-4 text-right">
+                                        {cancellable ? (
+                                            <button
+                                                onClick={() => handleCancel(batch.id)}
+                                                disabled={cancelling === batch.id}
+                                                className="text-xs font-bold text-rose-500 hover:text-rose-700 disabled:opacity-50">
+                                                {cancelling === batch.id ? 'Đang hủy...' : 'Hủy lô'}
+                                            </button>
+                                        ) : (
+                                            <span className="text-xs text-slate-300">—</span>
+                                        )}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                        {batchList.length === 0 && (
+                            <tr>
+                                <td colSpan="8" className="px-6 py-12 text-center">
+                                    <p className="text-slate-400">Chưa có lô xuất nào</p>
+                                    <Link to="/kho/tao-lo" className="mt-3 inline-block text-sm font-bold text-green-600 hover:underline">+ Tạo lô xuất đầu tiên</Link>
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
 import { useToast } from '../../context/ToastContext';
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -803,6 +903,7 @@ const PAGE_TITLES = {
     new: 'Đơn mới',
     inventory: 'Tồn kho',
     pickup: 'Phiếu thu gom',
+    batchManage: 'Quản lý lô xuất',
     invoice: 'Hóa đơn',
     history: 'Lịch sử giao dịch',
     report: 'Báo cáo & Thống kê',
@@ -885,6 +986,7 @@ const WarehouseDashboard = () => {
                     {active === 'new' && <PageNew newRequests={newRequests} onSchedule={handleSchedule} />}
                     {active === 'inventory' && <PageInventory inventoryList={inventoryList} />}
                     {active === 'pickup' && <PagePickupList pickupList={pickupList} />}
+                    {active === 'batchManage' && <PageBatchManagement pickupList={outboundRecent} onReload={loadData} />}
                     {active === 'invoice' && <PageInvoiceList invoiceList={invoiceList} />}
                     {active === 'history' && <PageHistory outboundRecent={outboundRecent} />}
                     {active === 'report' && <PageReport inventoryList={inventoryList} outboundRecent={outboundRecent} />}

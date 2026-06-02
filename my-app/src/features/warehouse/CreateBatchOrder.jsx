@@ -21,6 +21,7 @@ export default function CreateBatchOrder() {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [inventoryList, setInventoryList] = useState([]);
+    const [activeMaterialTypes, setActiveMaterialTypes] = useState([]); // Loại đã có lô đang hoạt động
 
     const [form, setForm] = useState({
         wasteType: '',         // Loại phế liệu (tên hiển thị)
@@ -45,18 +46,20 @@ export default function CreateBatchOrder() {
         transportType: 'DEPOT_SHIPPED', // DEPOT_SHIPPED hoặc FACTORY_PICKUP
     });
 
-    // Load tồn kho thật để hiển thị gợi ý
+    // Load tồn kho và danh sách loại vật liệu đang có lô hoạt động
     useEffect(() => {
         depotService.getInventory()
             .then(data => setInventoryList(data))
             .catch(() => {
-                // Mặc định giả lập nếu chưa có
                 setInventoryList([
                     { type: 'Sắt vụn', current: 1200, unit: 'kg', key: 'IRON' },
                     { type: 'Đồng cáp', current: 450, unit: 'kg', key: 'COPPER' },
                     { type: 'Nhựa cứng (PP/PE)', current: 890, unit: 'kg', key: 'PET' },
                 ]);
             });
+        depotService.getActiveMaterialTypes()
+            .then(data => setActiveMaterialTypes(data || []))
+            .catch(() => {});
     }, []);
 
     // ── Xử lý nhập liệu ──────────────────────────────────────────────────────
@@ -176,15 +179,34 @@ export default function CreateBatchOrder() {
                                     <div className="grid grid-cols-3 gap-3">
                                         {inventoryList.map(item => {
                                             const active = form.wasteType === item.type;
+                                            // Kiểm tra xem loại vật liệu này đã có lô đang hoạt động chưa
+                                            const isListed = activeMaterialTypes.some(t =>
+                                                t.toUpperCase() === (item.key || '').toUpperCase()
+                                            );
                                             return (
-                                                <button key={item.type} type="button" onClick={() => handleSelectWasteType(item.type)}
-                                                    className={`p-4 rounded-xl border text-left transition-all ${active ? 'border-green-600 bg-green-50/50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                                                <button key={item.type} type="button"
+                                                    onClick={() => !isListed && handleSelectWasteType(item.type)}
+                                                    disabled={isListed}
+                                                    title={isListed ? 'Loại này đang có lô đăng bán rồi' : ''}
+                                                    className={`p-4 rounded-xl border text-left transition-all relative
+                                                        ${isListed ? 'border-amber-300 bg-amber-50 cursor-not-allowed opacity-70'
+                                                            : active ? 'border-green-600 bg-green-50/50'
+                                                            : 'border-slate-200 hover:bg-slate-50'}`}>
+                                                    {isListed && (
+                                                        <span className="absolute top-2 right-2 text-xs font-bold bg-amber-400 text-white px-1.5 py-0.5 rounded-md">Đã đăng</span>
+                                                    )}
                                                     <p className="text-xs text-slate-400 font-semibold uppercase">TỒN: {item.current} kg</p>
                                                     <p className="font-bold text-slate-800 text-sm mt-1">{item.type}</p>
+                                                    {isListed && <p className="text-xs text-amber-600 mt-1">Đang có lô đăng bán</p>}
                                                 </button>
                                             );
                                         })}
                                     </div>
+                                    {activeMaterialTypes.length > 0 && (
+                                        <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                                            <span>⚠️</span> Loại phế liệu đã có lô đang đăng bán sẽ bị khóa để tránh đăng trùng.
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">

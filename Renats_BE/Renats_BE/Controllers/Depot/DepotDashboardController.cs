@@ -91,12 +91,14 @@ public class DepotDashboardController : ControllerBase
 
     // GET /api/depot/pickup-requests/{id} — Chi tiết một pickup request
     [HttpGet("/api/depot/pickup-requests/{id}")]
+    [Authorize(Roles = "DEPOT,SELLER,FACTORY,DRIVER,ADMIN")]
     public async Task<IActionResult> GetPickupRequestDetail(Guid id)
     {
         var request = await _db.PickupRequests
             .Include(r => r.Seller).ThenInclude(s => s.User)
             .Include(r => r.Items)
             .Include(r => r.Results)
+            .Include(r => r.AssignedDepot)
             .FirstOrDefaultAsync(r => r.Id == id);
 
         if (request is null) return NotFound();
@@ -111,7 +113,11 @@ public class DepotDashboardController : ControllerBase
             pickupDate     = request.PickupDate.ToString("dd/MM/yyyy"),
             pickupSlot     = request.PickupSlot,
             description    = request.Description,
+            note           = request.Note,
             status         = request.Status.ToString(),
+            depotName      = request.AssignedDepot?.CompanyName ?? "Kho Re-Nats",
+            depotPhone     = request.AssignedDepot?.ContactPhone ?? "028 1234 5678",
+            depotAddress   = request.AssignedDepot?.Address ?? "45 Đường Số 12, Bình Chánh, TP. Hồ Chí Minh",
             types = request.Items.Select(i => new
             {
                 id          = i.MaterialId,

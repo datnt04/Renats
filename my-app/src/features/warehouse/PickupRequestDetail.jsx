@@ -5,6 +5,8 @@ import { useToast } from '../../context/ToastContext';
 
 // ── Giá mặc định theo loại phế liệu ──────────────────────────────────────
 const DEFAULT_PRICES = {
+    'Đồng cáp': 95_000,
+    'Đóng cáp': 95_000,
     'Đồng cáp (Loại 1)': 95_000,
     'Đồng cáp (Loại 2)': 75_000,
     'Sắt vụn': 10_000,
@@ -79,6 +81,8 @@ const PickupRequestDetail = () => {
 
     // Weights: { [materialId]: string }
     const [weights, setWeights] = useState({});
+    // Prices: { [materialId]: string }
+    const [prices, setPrices] = useState({});
     const [note, setNote]       = useState('');
 
     // ── Load data ──────────────────────────────────────────────────────────
@@ -88,13 +92,25 @@ const PickupRequestDetail = () => {
         depotService.getPickupRequestDetail(id)
             .then(data => {
                 setRequest(data);
-                // Khởi tạo weights từ results (nếu đã cân rồi) hoặc rỗng
+                // Khởi tạo weights và prices từ results (nếu đã cân rồi) hoặc mặc định
                 const initWeights = {};
+                const initPrices  = {};
                 (data.types || []).forEach(t => {
                     const existing = (data.results || []).find(r => r.materialLabel === t.label);
                     initWeights[t.id] = existing ? String(existing.weightKg) : '';
+                    
+                    const defaultP = t.pricePerKg && t.pricePerKg > 0 ? t.pricePerKg : (DEFAULT_PRICES[t.label] || 0);
+                    initPrices[t.id]  = existing ? String(existing.pricePerKg) : String(defaultP || '');
                 });
                 setWeights(initWeights);
+                setPrices(initPrices);
+                if (data.note) {
+                    setNote(data.note);
+                }
+                // Nếu đơn này đã được cân hoặc hoàn thành, tự động chuyển sang màn hình Đã lưu để có nút xuất hóa đơn
+                if (data.status === 'WEIGHED' || data.status === 'DONE') {
+                    setSaved(true);
+                }
                 setLoading(false);
             })
             .catch(() => {
@@ -117,8 +133,13 @@ const PickupRequestDetail = () => {
                 };
                 setRequest(mockRequest);
                 const initWeights = {};
-                mockRequest.types.forEach(t => { initWeights[t.id] = ''; });
+                const initPrices  = {};
+                mockRequest.types.forEach(t => { 
+                    initWeights[t.id] = ''; 
+                    initPrices[t.id]  = String(t.pricePerKg || 0);
+                });
                 setWeights(initWeights);
+                setPrices(initPrices);
                 setLoading(false);
             });
     }, [id]);
@@ -126,13 +147,17 @@ const PickupRequestDetail = () => {
     // ── Computed ───────────────────────────────────────────────────────────
     const types = request?.types || [];
     const setWeight = (tid, val) => setWeights(p => ({ ...p, [tid]: val }));
+    const setPrice  = (tid, val) => setPrices(p => ({ ...p, [tid]: val }));
 
-    const getPricePerKg = (t) =>
-        t.pricePerKg && t.pricePerKg > 0
+    const getPricePerKg = (t) => {
+        const val = parseFloat(prices[t.id]);
+        if (!isNaN(val)) return val;
+        return t.pricePerKg && t.pricePerKg > 0
             ? t.pricePerKg
             : (DEFAULT_PRICES[t.label] || 0);
+    };
 
-    const allFilled  = types.length > 0 && types.every(t => parseFloat(weights[t.id]) > 0);
+    const allFilled  = types.length > 0 && types.every(t => parseFloat(weights[t.id]) > 0 && getPricePerKg(t) > 0);
     const totalKg    = types.reduce((s, t) => s + (parseFloat(weights[t.id]) || 0), 0);
     const totalMoney = types.reduce((s, t) => s + (parseFloat(weights[t.id]) || 0) * getPricePerKg(t), 0);
 
@@ -325,34 +350,54 @@ const PickupRequestDetail = () => {
                             const price  = getPricePerKg(t);
                             return (
                                 <div key={t.id}
-                                    className={`rounded-xl border transition-all ${hasVal ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
-                                    <div className="flex items-center gap-3 px-4 pt-3.5 pb-2">
-                                        <span className="text-2xl flex-shrink-0">{t.emoji}</span>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-slate-800">{t.label}</p>
-                                            <p className="text-xs text-slate-400">{vnd(price)} / kg</p>
+                                    className={`rounded-xl border transition-all ${hasVal ? 'bg-emerald-50/50 border-emerald-200' : 'bg-white border-slate-200'}`}>
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 pt-3.5 pb-3">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-2xl flex-shrink-0">{t.emoji}</span>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-bold text-slate-800">{t.label}</p>
+                                                <p className="text-xs text-slate-400">Đơn giá: {vnd(t.pricePerKg && t.pricePerKg > 0 ? t.pricePerKg : (DEFAULT_PRICES[t.label] || 0))} / kg</p>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                step="0.1"
-                                                value={weights[t.id]}
-                                                onChange={e => setWeight(t.id, e.target.value)}
-                                                placeholder="0.0"
-                                                className={`w-20 text-right border rounded-xl px-3 py-2 text-sm font-bold focus:outline-none transition-all ${hasVal
-                                                    ? 'border-emerald-300 bg-white text-emerald-700 focus:ring-2 focus:ring-emerald-300'
-                                                    : 'border-slate-200 bg-white text-slate-800 focus:ring-2 focus:ring-green-500 focus:border-green-500'
-                                                }`}
-                                            />
-                                            <span className={`text-sm font-semibold ${hasVal ? 'text-emerald-600' : 'text-slate-400'}`}>kg</span>
+                                        
+                                        <div className="flex items-center gap-2 justify-end">
+                                            {/* Nhập đơn giá */}
+                                            <div className="flex items-center gap-1">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="1000"
+                                                    value={prices[t.id] ?? ''}
+                                                    onChange={e => setPrice(t.id, e.target.value)}
+                                                    placeholder="Đơn giá"
+                                                    className="w-24 text-right border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                                />
+                                                <span className="text-xs font-semibold text-slate-400">đ/kg</span>
+                                            </div>
+
+                                            {/* Nhập số kg */}
+                                            <div className="flex items-center gap-1">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.1"
+                                                    value={weights[t.id]}
+                                                    onChange={e => setWeight(t.id, e.target.value)}
+                                                    placeholder="0.0"
+                                                    className={`w-20 text-right border rounded-xl px-2.5 py-1.5 text-xs font-bold focus:outline-none transition-all ${hasVal
+                                                        ? 'border-emerald-300 bg-white text-emerald-700 focus:ring-2 focus:ring-emerald-300'
+                                                        : 'border-slate-200 bg-white text-slate-800 focus:ring-2 focus:ring-green-500 focus:border-green-500'
+                                                    }`}
+                                                />
+                                                <span className={`text-xs font-semibold ${hasVal ? 'text-emerald-600' : 'text-slate-400'}`}>kg</span>
+                                            </div>
                                         </div>
                                     </div>
                                     {/* Thành tiền từng loại */}
                                     {hasVal && (
-                                        <div className="px-4 pb-3 flex justify-end">
-                                            <span className="text-xs font-bold text-emerald-600">
-                                                = {vnd(Math.round(kg * price))}
+                                        <div className="px-4 pb-3 flex justify-end border-t border-dashed border-emerald-100 pt-2">
+                                            <span className="text-xs font-bold text-emerald-700">
+                                                Tạm tính: {weights[t.id]} kg × {vnd(price)} = {vnd(Math.round(kg * price))}
                                             </span>
                                         </div>
                                     )}

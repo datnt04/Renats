@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Renats_BE.Data;
 using Renats_BE.Models;
+using Renats_BE.Models.Enums;
 
 namespace Renats_BE.Controllers.Factory;
 
@@ -49,17 +50,57 @@ public class FactoryPremiumController : ControllerBase
 
     // GET /api/factory/premium/status
     [HttpGet("status")]
-    public async Task<IActionResult> GetStatus([FromQuery] Guid factoryId)
+    public async Task<IActionResult> GetStatus([FromQuery] Guid? factoryId)
     {
-        var factory = await _db.Factories.FindAsync(factoryId);
-        if (factory is null) return NotFound("Factory not found");
+        Guid actualFactoryId = Guid.Empty;
 
-        bool isPremium = factory.IsPremium && factory.PremiumExpiresAt > DateTime.UtcNow;
+        if (factoryId.HasValue && factoryId.Value != Guid.Empty)
+        {
+            actualFactoryId = factoryId.Value;
+        }
+        else
+        {
+            // Trích xuất từ JWT token tự động
+            var userIdClaim = User.FindFirst("sub")?.Value
+                           ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (Guid.TryParse(userIdClaim, out var userId))
+            {
+                var factory = await _db.Factories.FirstOrDefaultAsync(f => f.UserId == userId);
+                if (factory == null)
+                {
+                    // Tự động tạo Factory để tránh lỗi hệ thống
+                    var user = await _db.Users.FindAsync(userId);
+                    if (user != null && user.Role == UserRole.FACTORY)
+                    {
+                        factory = new Renats_BE.Models.Factory
+                        {
+                            UserId = user.Id,
+                            CompanyName = user.FullName ?? "Nhà máy tái chế Re-Nats",
+                            ContactPerson = user.FullName ?? "Người đại diện",
+                            ContactPhone = user.Phone ?? "0987654321",
+                            Address = "Hà Nội",
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _db.Factories.Add(factory);
+                        await _db.SaveChangesAsync();
+                    }
+                }
+                if (factory != null)
+                {
+                    actualFactoryId = factory.Id;
+                }
+            }
+        }
+
+        var factoryObj = await _db.Factories.FindAsync(actualFactoryId);
+        if (factoryObj is null) return NotFound("Không tìm thấy thông tin nhà máy");
+
+        bool isPremium = factoryObj.IsPremium && factoryObj.PremiumExpiresAt > DateTime.UtcNow;
 
         return Ok(new
         {
             isPremium,
-            expiresAt = factory.PremiumExpiresAt
+            expiresAt = factoryObj.PremiumExpiresAt
         });
     }
 
