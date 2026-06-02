@@ -31,7 +31,7 @@ public class DepotProfileController : ControllerBase
         if (depot is null)
         {
             var user = await _db.Users.FindAsync(userId);
-            if (user != null && user.Role == UserRole.DEPOT)
+            if (user != null)
             {
                 depot = new Renats_BE.Models.Depot
                 {
@@ -81,7 +81,27 @@ public class DepotProfileController : ControllerBase
 
         var depot = await _db.Depots.FirstOrDefaultAsync(d => d.UserId == userId);
         if (depot is null)
-            return NotFound("Không tìm thấy thông tin kho");
+        {
+            var user = await _db.Users.FindAsync(userId);
+            if (user != null)
+            {
+                depot = new Renats_BE.Models.Depot
+                {
+                    UserId = user.Id,
+                    CompanyName = dto.CompanyName ?? user.FullName ?? "Điểm thu gom Re-Nats",
+                    ContactPerson = dto.ContactPerson ?? user.FullName ?? "Người đại diện",
+                    ContactPhone = dto.ContactPhone ?? user.Phone ?? "0987654321",
+                    Address = dto.Address ?? "Hà Tĩnh",
+                    CreatedAt = DateTime.UtcNow
+                };
+                _db.Depots.Add(depot);
+                await _db.SaveChangesAsync();
+            }
+            else
+            {
+                return NotFound("Không tìm thấy thông tin kho hợp lệ");
+            }
+        }
 
         depot.CompanyName = dto.CompanyName ?? depot.CompanyName;
         depot.ContactPerson = dto.ContactPerson ?? depot.ContactPerson;
@@ -91,8 +111,8 @@ public class DepotProfileController : ControllerBase
         depot.Province = dto.Province ?? depot.Province;
         depot.TaxCode = dto.TaxCode ?? depot.TaxCode;
         
-        if (dto.Latitude.HasValue) depot.Latitude = dto.Latitude;
-        if (dto.Longitude.HasValue) depot.Longitude = dto.Longitude;
+        depot.Latitude = dto.Latitude;
+        depot.Longitude = dto.Longitude;
 
         await _db.SaveChangesAsync();
 
