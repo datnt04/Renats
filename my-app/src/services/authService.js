@@ -26,10 +26,11 @@ export const authService = {
   saveSession: (authResponse) => {
     localStorage.setItem('renats_token', authResponse.token);
     localStorage.setItem('renats_user', JSON.stringify({
-      userId:   authResponse.userId,
-      role:     authResponse.role,
-      fullName: authResponse.fullName,
-      email:    authResponse.email,
+      userId:    authResponse.userId,
+      role:      authResponse.role,
+      fullName:  authResponse.fullName,
+      email:     authResponse.email,
+      profileId: authResponse.profileId ?? null, // factoryId / depotId / sellerId / driverId
     }));
   },
 

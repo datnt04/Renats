@@ -62,6 +62,12 @@ public class FactoryOrderController : ControllerBase
         if (bid is null) return NotFound("Bid not found");
         if (bid.Status != BidStatus.ACCEPTED) return BadRequest("Bid has not been accepted");
 
+        // Guard: tránh tạo duplicate order nếu API bị gọi 2 lần
+        var existingOrder = await _db.BatchOrders
+            .AnyAsync(o => o.AcceptedBidId == dto.BidId);
+        if (existingOrder)
+            return Conflict(new { message = "Order already created for this bid" });
+
         var order = new BatchOrder
         {
             BatchId = bid.BatchId,

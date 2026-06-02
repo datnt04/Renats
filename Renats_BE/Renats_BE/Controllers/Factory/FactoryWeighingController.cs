@@ -49,9 +49,14 @@ public class FactoryWeighingController : ControllerBase
         var order = await _db.BatchOrders
             .Include(o => o.Batch)
             .Include(o => o.TransportJob)
+            .Include(o => o.WeightTicket)
             .FirstOrDefaultAsync(o => o.Id == orderId);
 
         if (order is null) return NotFound("Order not found");
+
+        // Guard: tránh tạo duplicate nếu API bị gọi 2 lần
+        if (order.WeightTicket is not null)
+            return Conflict(new { message = "Weighing already completed for this order", ticketId = order.WeightTicket.Id });
 
         var netWeight = dto.MeasuredWeightKg - dto.ImpurityWeightKg;
         var diffPct = dto.MeasuredWeightKg > 0

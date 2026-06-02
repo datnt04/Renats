@@ -41,6 +41,11 @@ public class AuthResponse
     public Guid UserId { get; set; }
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    /// <summary>
+    /// ID profile tương ứng với role: factoryId, depotId, sellerId, driverId.
+    /// FE dùng field này thay cho fallback hardcoded.
+    /// </summary>
+    public Guid? ProfileId { get; set; }
 }
 
 /// <summary>
