@@ -58,7 +58,9 @@ export default function CreateBatchOrder() {
         depotService.getProfile()
             .then(data => {
                 setDepotProfile(data);
-                if (data && data.latitude && data.longitude) {
+                if (data && data.address) {
+                    updateForm('location', data.address);
+                } else if (data && data.latitude && data.longitude) {
                     const loc = `${data.latitude}, ${data.longitude}`;
                     updateForm('location', loc);
                 }
@@ -89,7 +91,7 @@ export default function CreateBatchOrder() {
         }));
     };
 
-    // Lấy vị trí GPS hiện tại của kho vựa và lưu vào profile
+    // Lấy vị trí GPS hiện tại của kho vựa và lưu vào profile dạng Địa chỉ chữ
     const handleGetWarehouseGPS = () => {
         if (!navigator.geolocation) {
             alert('Trình duyệt của bạn không hỗ trợ định vị GPS.');
@@ -99,18 +101,40 @@ export default function CreateBatchOrder() {
             async (pos) => {
                 const lat = pos.coords.latitude;
                 const lng = pos.coords.longitude;
-                const coordsString = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-                updateForm('location', coordsString);
-
+                
                 try {
+                    // Gọi OpenStreetMap Nominatim reverse geocoding để lấy địa chỉ dạng chữ
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=vi`
+                    );
+                    const data = await res.json();
+                    const addressStr = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                    
+                    updateForm('location', addressStr);
+
+                    // Cập nhật lên server cả địa chỉ chữ lẫn tọa độ Latitude, Longitude
                     await depotService.updateProfile({
+                        companyName: depotProfile?.companyName,
+                        contactPerson: depotProfile?.contactPerson,
+                        contactPhone: depotProfile?.contactPhone,
+                        taxCode: depotProfile?.taxCode,
+                        address: addressStr,
                         latitude: lat,
-                        longitude: lng,
-                        address: depotProfile?.address || 'Kho Re-Nats'
+                        longitude: lng
                     });
-                    alert('Đã cập nhật tọa độ GPS thành công vào Hồ Sơ Kho!');
+
+                    setDepotProfile(prev => ({
+                        ...prev,
+                        address: addressStr,
+                        latitude: lat,
+                        longitude: lng
+                    }));
+                    
+                    alert('Đã cập nhật vị trí địa chỉ & tọa độ GPS thành công vào Hồ Sơ Kho!');
                 } catch (err) {
-                    console.error('Lỗi cập nhật GPS lên server:', err);
+                    console.error('Lỗi định vị vị trí hoặc cập nhật GPS:', err);
+                    const fallback = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                    updateForm('location', fallback);
                 }
             },
             (() => {
