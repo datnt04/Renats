@@ -168,6 +168,40 @@ public class DepotBatchOrderController : ControllerBase
         return Ok(new { message = "Đã hủy lô hàng thành công" });
     }
 
+    // PATCH /api/depot/batch-orders/{id}/transport — Chọn vận chuyển sau khi nhà máy xác nhận
+    [HttpPatch("{id}/transport")]
+    public async Task<IActionResult> SetTransport(Guid id, [FromBody] SetTransportDto dto)
+    {
+        var userIdClaim = User.FindFirst("sub")?.Value
+                       ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(userIdClaim, out var userId)) return Unauthorized();
+
+        var depot = await _db.Depots.FirstOrDefaultAsync(d => d.UserId == userId);
+        if (depot is null) return NotFound("Không tìm thấy thông tin kho");
+
+        var batch = await _db.InventoryBatches.FirstOrDefaultAsync(b => b.Id == id && b.DepotId == depot.Id);
+        if (batch is null) return NotFound("Không tìm thấy lô hàng");
+
+        // Chỉ được chọn vận chuyển khi nhà máy đã xác nhận
+        if (batch.Status != BatchStatus.ACCEPTED)
+            return BadRequest("Chỉ được chọn vận chuyển sau khi nhà máy xác nhận lô hàng");
+
+        if (!Enum.TryParse<TransportType>(dto.TransportType, ignoreCase: true, out var tt))
+            return BadRequest("Phương thức vận chuyển không hợp lệ");
+
+        batch.TransportType = tt;
+        batch.Status = BatchStatus.READY_FOR_PICKUP;
+        batch.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Ok(new { message = "Đã cập nhật phương thức vận chuyển" });
+    }
+
+    public class SetTransportDto
+    {
+        public string TransportType { get; set; } = string.Empty; // DEPOT_SHIPPED | FACTORY_PICKUP
+    }
+
     // GET /api/depot/batch-orders/active-material-types — Lấy danh sách loại vật liệu đang có lô hoạt động
     [HttpGet("active-material-types")]
     public async Task<IActionResult> GetActiveMaterialTypes()

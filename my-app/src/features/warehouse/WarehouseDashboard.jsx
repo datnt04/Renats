@@ -28,6 +28,20 @@ const STATUS_OUT = {
     CANCELLED: { label: 'ĐÃ HỦY', cls: 'bg-rose-100 text-rose-600' },
 };
 
+const MATERIAL_LABELS = {
+    IRON: "Sắt vụn",
+    STEEL: "Thép phế liệu",
+    COPPER: "Đồng cáp",
+    ALUMINUM: "Nhôm phế liệu",
+    PAPER: "Giấy Carton",
+    CARDBOARD: "Giấy Carton",
+    PET: "Nhựa cứng (PP/PE)",
+    HDPE: "Nhựa cứng (PP/PE)",
+    PVC: "Nhựa cứng (PP/PE)",
+    ELECTRONIC_WASTE: "Pin / Acquy cũ",
+    OTHER: "Khác"
+};
+
 const vnd = n => n.toLocaleString('vi-VN') + ' ₫';
 
 // ── SVG icons ─────────────────────────────────────────────────────────────
@@ -43,6 +57,7 @@ function IcoBell() { return <svg className="w-5 h-5" fill="none" stroke="current
 function IcoSearch() { return <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0015.803 15.803z" /></svg>; }
 function IcoCheck() { return <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>; }
 function IcoPhone() { return <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.338c0-1.006.81-1.826 1.818-1.826h.75c.56 0 1.05.328 1.281.832l1.154 2.565a1.458 1.458 0 01-.326 1.647L5.675 10.6a.75.75 0 00-.162.787 11.245 11.245 0 005.1 5.1.75.75 0 00.787-.163l1.044-1.253a1.457 1.457 0 011.647-.325l2.565 1.154c.504.23.832.72.832 1.28v.75c0 1.008-.82 1.819-1.826 1.819-8.4 0-15.206-6.807-15.206-15.206z" /></svg>; }
+function IcoUser() { return <svg style={{ width: '1.1rem', height: '1.1rem' }} fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>; }
 function IcoRight() { return <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>; }
 function IcoTrendUp() { return <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" /></svg>; }
 function IcoTrendDown() { return <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6L9 12.75l4.306-4.307a11.95 11.95 0 015.814 5.519l2.74 1.22m0 0l-5.94 2.28m5.94-2.28l-2.28-5.941" /></svg>; }
@@ -58,6 +73,7 @@ const Sidebar = ({ active, setActive, newRequestsCount }) => {
                 { key: 'overview', label: 'Tổng quan', icon: IcoDashboard },
                 { key: 'new', label: 'Đơn mới', icon: IcoInbox, badge: newRequestsCount },
                 { key: 'inventory', label: 'Tồn kho', icon: IcoBox },
+                { key: 'profile', label: 'Hồ sơ kho', icon: IcoUser },
             ],
         },
         {
@@ -667,7 +683,7 @@ const PageHistory = ({ outboundRecent }) => {
                             return (
                                 <tr key={batch.id} className="hover:bg-slate-50 transition-colors text-sm">
                                     <td className="px-6 py-4 font-semibold text-slate-800">{batch.batchCode}</td>
-                                    <td className="px-6 py-4 text-slate-600">{batch.materialType}</td>
+                                    <td className="px-6 py-4 text-slate-600">{MATERIAL_LABELS[batch.materialType] || batch.materialType}</td>
                                     <td className="px-6 py-4 text-slate-800 font-medium">
                                         {batch.actualKg ? `${batch.actualKg} kg (Thực tế)` : `${batch.estimatedKg} kg (Ước tính)`}
                                     </td>
@@ -799,6 +815,9 @@ const PageReport = ({ inventoryList, outboundRecent }) => {
 // ─────────────────────────────────────────────────────────────────────────
 const PageBatchManagement = ({ pickupList: batchList, onReload }) => {
     const [cancelling, setCancelling] = React.useState(null);
+    const [activeTransportBatch, setActiveTransportBatch] = React.useState(null);
+    const [transportType, setTransportType] = React.useState('DEPOT_SHIPPED');
+    const [savingTransport, setSavingTransport] = React.useState(false);
 
     const handleCancel = async (id) => {
         if (!window.confirm('Bạn có chắc muốn hủy lô hàng này không?')) return;
@@ -811,6 +830,21 @@ const PageBatchManagement = ({ pickupList: batchList, onReload }) => {
             alert('Lỗi hủy lô: ' + (err.message || 'Vui lòng thử lại'));
         } finally {
             setCancelling(null);
+        }
+    };
+
+    const handleSaveTransport = async () => {
+        if (!activeTransportBatch) return;
+        setSavingTransport(true);
+        try {
+            await depotService.setBatchTransport(activeTransportBatch.id, transportType);
+            alert('Đã chọn phương thức vận chuyển thành công!');
+            setActiveTransportBatch(null);
+            if (onReload) onReload();
+        } catch (err) {
+            alert('Lỗi lưu vận chuyển: ' + (err.message || 'Vui lòng thử lại'));
+        } finally {
+            setSavingTransport(false);
         }
     };
 
@@ -849,7 +883,7 @@ const PageBatchManagement = ({ pickupList: batchList, onReload }) => {
                             return (
                                 <tr key={batch.id} className="hover:bg-slate-50 transition-colors text-sm">
                                     <td className="px-5 py-4 font-semibold text-slate-800">{batch.batchCode}</td>
-                                    <td className="px-5 py-4 text-slate-600">{batch.materialType}</td>
+                                    <td className="px-5 py-4 text-slate-600">{MATERIAL_LABELS[batch.materialType] || batch.materialType}</td>
                                     <td className="px-5 py-4 text-slate-700 font-medium">
                                         {batch.actualKg ? `${batch.actualKg} kg` : `${batch.estimatedKg} kg`}
                                     </td>
@@ -870,6 +904,15 @@ const PageBatchManagement = ({ pickupList: batchList, onReload }) => {
                                                 disabled={cancelling === batch.id}
                                                 className="text-xs font-bold text-rose-500 hover:text-rose-700 disabled:opacity-50">
                                                 {cancelling === batch.id ? 'Đang hủy...' : 'Hủy lô'}
+                                            </button>
+                                        ) : batch.status === 'ACCEPTED' ? (
+                                            <button
+                                                onClick={() => {
+                                                    setActiveTransportBatch(batch);
+                                                    setTransportType('DEPOT_SHIPPED');
+                                                }}
+                                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-lg transition-colors shadow-sm whitespace-nowrap">
+                                                Chọn vận chuyển
                                             </button>
                                         ) : (
                                             <span className="text-xs text-slate-300">—</span>
@@ -893,6 +936,197 @@ const PageBatchManagement = ({ pickupList: batchList, onReload }) => {
     );
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// PAGE PROFILE (HỒ SƠ KHO)
+// ─────────────────────────────────────────────────────────────────────────
+const PageProfile = () => {
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [form, setForm] = useState({
+        companyName: '',
+        contactPerson: '',
+        contactPhone: '',
+        taxCode: '',
+        address: '',
+        city: '',
+        province: '',
+        latitude: '',
+        longitude: ''
+    });
+
+    const fetchProfile = async () => {
+        try {
+            const data = await depotService.getProfile();
+            setProfile(data);
+            if (data) {
+                setForm({
+                    companyName: data.companyName || '',
+                    contactPerson: data.contactPerson || '',
+                    contactPhone: data.contactPhone || '',
+                    taxCode: data.taxCode || '',
+                    address: data.address || '',
+                    city: data.city || '',
+                    province: data.province || '',
+                    latitude: data.latitude || '',
+                    longitude: data.longitude || ''
+                });
+            }
+        } catch (err) {
+            console.error('Lỗi tải hồ sơ:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchProfile();
+    }, []);
+
+    const handleGetGPS = () => {
+        if (!navigator.geolocation) {
+            alert('Trình duyệt không hỗ trợ định vị GPS.');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setForm(prev => ({
+                    ...prev,
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude
+                }));
+                alert('Đã lấy tọa độ GPS hiện tại thành công! Nhấn "Lưu hồ sơ" để lưu lại.');
+            },
+            () => {
+                alert('Không thể truy cập vị trí. Hãy cấp quyền truy cập GPS.');
+            }
+        );
+    };
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        try {
+            await depotService.updateProfile({
+                companyName: form.companyName,
+                contactPerson: form.contactPerson,
+                contactPhone: form.contactPhone,
+                taxCode: form.taxCode,
+                address: form.address,
+                city: form.city,
+                province: form.province,
+                latitude: form.latitude ? parseFloat(form.latitude) : null,
+                longitude: form.longitude ? parseFloat(form.longitude) : null
+            });
+            alert('Đã lưu hồ sơ kho thành công!');
+            fetchProfile();
+        } catch (err) {
+            alert('Lỗi lưu hồ sơ: ' + (err.message || 'Vui lòng thử lại'));
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="py-12 text-center">
+                <p className="text-slate-400 text-sm">Đang tải thông tin hồ sơ kho...</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="max-w-3xl space-y-6">
+            <div>
+                <h2 className="font-bold text-slate-800 text-lg">Hồ sơ điểm thu gom</h2>
+                <p className="text-sm text-slate-400 mt-0.5">Quản lý thông tin liên hệ và tọa độ định vị GPS của kho.</p>
+            </div>
+
+            <form onSubmit={handleSave} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+                {/* Section 1: Thông tin chung */}
+                <div className="p-6 space-y-4">
+                    <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Thông tin chung</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Tên công ty / Điểm thu gom</label>
+                            <input type="text" value={form.companyName} onChange={e => setForm({...form, companyName: e.target.value})}
+                                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" required />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Mã số thuế</label>
+                            <input type="text" value={form.taxCode} onChange={e => setForm({...form, taxCode: e.target.value})}
+                                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Người liên hệ</label>
+                            <input type="text" value={form.contactPerson} onChange={e => setForm({...form, contactPerson: e.target.value})}
+                                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" required />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Số điện thoại liên hệ</label>
+                            <input type="text" value={form.contactPhone} onChange={e => setForm({...form, contactPhone: e.target.value})}
+                                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" required />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Section 2: Địa chỉ & GPS */}
+                <div className="p-6 space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Địa chỉ & Tọa độ GPS</h3>
+                        <button type="button" onClick={handleGetGPS}
+                            className="flex items-center gap-1.5 text-green-700 hover:text-green-800 text-xs font-extrabold hover:underline">
+                            <span className="material-symbols-outlined text-sm">my_location</span> Lấy tọa độ GPS
+                        </button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Địa chỉ chi tiết</label>
+                            <input type="text" value={form.address} onChange={e => setForm({...form, address: e.target.value})}
+                                className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" required />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Thành phố / Huyện</label>
+                                <input type="text" value={form.city} onChange={e => setForm({...form, city: e.target.value})}
+                                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Tỉnh</label>
+                                <input type="text" value={form.province} onChange={e => setForm({...form, province: e.target.value})}
+                                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Vĩ độ (Latitude)</label>
+                                <input type="number" step="any" value={form.latitude} onChange={e => setForm({...form, latitude: e.target.value})}
+                                    className="w-full border border-slate-200 bg-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" placeholder="Chưa xác định" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Kinh độ (Longitude)</label>
+                                <input type="number" step="any" value={form.longitude} onChange={e => setForm({...form, longitude: e.target.value})}
+                                    className="w-full border border-slate-200 bg-white rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" placeholder="Chưa xác định" />
+                            </div>
+                            <p className="text-[10px] text-slate-400 md:col-span-2 mt-1">
+                                💡 Nhấn "Lấy tọa độ GPS" khi đang đứng ở kho để lấy chính xác tọa độ thực tế, giúp bản đồ VIP của hệ thống điều hướng chính xác tài xế vận chuyển và nhà máy.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Footer Submit */}
+                <div className="p-6 bg-slate-50 flex justify-end">
+                    <button type="submit" disabled={saving}
+                        className="px-6 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all shadow-sm">
+                        {saving ? 'Đang lưu...' : 'Lưu hồ sơ'}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+};
+
 import { useToast } from '../../context/ToastContext';
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -907,6 +1141,7 @@ const PAGE_TITLES = {
     invoice: 'Hóa đơn',
     history: 'Lịch sử giao dịch',
     report: 'Báo cáo & Thống kê',
+    profile: 'Hồ sơ & Định vị Kho',
 };
 
 const WarehouseDashboard = () => {
@@ -987,6 +1222,7 @@ const WarehouseDashboard = () => {
                     {active === 'inventory' && <PageInventory inventoryList={inventoryList} />}
                     {active === 'pickup' && <PagePickupList pickupList={pickupList} />}
                     {active === 'batchManage' && <PageBatchManagement pickupList={outboundRecent} onReload={loadData} />}
+                    {active === 'profile' && <PageProfile />}
                     {active === 'invoice' && <PageInvoiceList invoiceList={invoiceList} />}
                     {active === 'history' && <PageHistory outboundRecent={outboundRecent} />}
                     {active === 'report' && <PageReport inventoryList={inventoryList} outboundRecent={outboundRecent} />}
