@@ -85,6 +85,23 @@ export default function CreateBatchOrder() {
         }));
     };
 
+    // Lấy vị trí GPS hiện tại của kho vựa
+    const handleGetWarehouseGPS = () => {
+        if (!navigator.geolocation) {
+            alert('Trình duyệt của bạn không hỗ trợ định vị GPS.');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const coordsString = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)} (Định vị GPS)`;
+                updateForm('location', coordsString);
+            },
+            (() => {
+                alert('Không thể truy cập GPS thiết bị. Vui lòng cấp quyền vị trí.');
+            })
+        );
+    };
+
     // Tổng nguồn gốc
     const totalRatio = Object.values(form.sourceRatio).reduce((s, v) => s + v, 0);
 
@@ -223,9 +240,29 @@ export default function CreateBatchOrder() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Vị trí lưu kho chứa lô</label>
-                                    <input type="text" value={form.location} onChange={e => updateForm('location', e.target.value)}
-                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" />
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Vị trí lưu kho chứa lô</label>
+                                        <button
+                                            type="button"
+                                            onClick={handleGetWarehouseGPS}
+                                            className="text-green-700 hover:text-green-800 flex items-center gap-1 hover:underline text-[10px] font-extrabold cursor-pointer"
+                                        >
+                                            <span className="material-symbols-outlined text-xs">my_location</span>
+                                            Lấy GPS hiện tại
+                                        </button>
+                                    </div>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={form.location}
+                                            onChange={e => updateForm('location', e.target.value)}
+                                            className="w-full border border-slate-200 rounded-xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"
+                                            placeholder="VD: Khu A - Phân khu 1 hoặc tọa độ GPS..."
+                                        />
+                                        <span className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-lg">
+                                            location_on
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div>

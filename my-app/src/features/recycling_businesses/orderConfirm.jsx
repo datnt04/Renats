@@ -58,11 +58,11 @@ const OrderConfirm = () => {
         setSubmitting(true);
         try {
             await factoryService.placeBid(batch.id, bidPrice, note);
-            toast.success('Đặt giá thầu thành công! Đang chờ vựa chấp nhận.');
-            navigate('/recycle/dashboard');
+            toast.success('Chốt mua lô hàng thành công! Đơn hàng đã được chuyển sang trạng thái vận chuyển.');
+            navigate('/recycle/order-tracking');
         } catch (err) {
             console.error('Error placing bid:', err);
-            toast.error('Đặt giá thầu thất bại. Bạn có thể đã gửi thầu cho lô hàng này rồi!');
+            toast.error('Có lỗi xảy ra khi chốt mua lô hàng. Vui lòng thử lại!');
         } finally {
             setSubmitting(false);
         }
@@ -123,7 +123,7 @@ const OrderConfirm = () => {
                         Quay lại chợ nguyên liệu
                     </Link>
                     <h1 className="text-3xl font-bold text-slate-900">Xác nhận Đơn hàng</h1>
-                    <p className="text-slate-500 mt-2">Vui lòng kiểm tra chất lượng lô hàng qua hình ảnh thực tế trước khi đặt thầu.</p>
+                    <p className="text-slate-500 mt-2">Vui lòng kiểm tra chất lượng lô hàng qua hình ảnh thực tế trước khi xác nhận mua.</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -133,12 +133,12 @@ const OrderConfirm = () => {
                         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 flex items-start gap-4 shadow-sm">
                             <span className="text-2xl mt-0.5 shrink-0">💡</span>
                             <div>
-                                <h4 className="font-bold text-blue-900 text-sm mb-1">Hướng dẫn đấu thầu & Chốt đơn:</h4>
+                                <h4 className="font-bold text-blue-900 text-sm mb-1">Hướng dẫn chốt đơn mua ngay:</h4>
                                 <ul className="text-xs text-blue-700 space-y-1.5 list-disc pl-4 mt-2">
                                     <li><strong>Kiểm tra thông số:</strong> Hãy xem kỹ độ sạch, độ ẩm và hình ảnh thực tế của lô hàng từ vựa.</li>
-                                    <li><strong>Mức giá thu mua:</strong> Đơn giá mặc định là giá đề xuất từ vựa. Bạn có thể tự do điều chỉnh tăng/giảm giá thầu tùy thương lượng.</li>
-                                    <li><strong>Ghi chú bổ sung:</strong> Hãy nhập thêm các yêu cầu vận chuyển hoặc hình thức thanh toán đặc thầu.</li>
-                                    <li><strong>Tiến trình tiếp theo:</strong> Sau khi gửi thầu, vựa phế liệu sẽ phản hồi chấp nhận hoặc từ chối đơn hàng của bạn.</li>
+                                    <li><strong>Đơn giá mua:</strong> Bạn có thể mua trực tiếp theo đơn giá đề xuất của vựa để chốt ngay lô hàng.</li>
+                                    <li><strong>Không cần chờ xác nhận:</strong> Khi bạn bấm xác nhận, hệ thống sẽ chốt đơn ngay lập tức và điều phối tài xế vận chuyển về nhà máy.</li>
+                                    <li><strong>Theo dõi hành trình:</strong> Bạn có thể theo dõi xe di chuyển trực quan trên bản đồ ngay sau khi chốt đơn.</li>
                                 </ul>
                             </div>
                         </div>
@@ -256,16 +256,16 @@ const OrderConfirm = () => {
                                     disabled={submitting}
                                     className="w-full bg-primary hover:bg-secondary text-white py-4 px-6 rounded-xl font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group cursor-pointer disabled:opacity-55">
                                     {submitting ? (
-                                        <span>Đang gửi thầu...</span>
+                                        <span>Đang xử lý đơn...</span>
                                     ) : (
                                         <>
-                                            Xác nhận Đặt thầu lô hàng
+                                            Xác nhận Mua lô hàng
                                             <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
                                         </>
                                     )}
                                 </button>
                                 <p className="text-xs text-slate-400 text-center mt-4">
-                                    Bằng việc đặt thầu, bạn đồng ý với <a className="text-primary hover:underline" href="#">Điều khoản mua hàng</a> của Re-Nats.
+                                    Bằng việc mua hàng, bạn đồng ý với <a className="text-primary hover:underline" href="#">Điều khoản mua hàng</a> của Re-Nats.
                                 </p>
                             </div>
                             <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
