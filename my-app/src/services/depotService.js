@@ -50,7 +50,17 @@ export const depotService = {
   getActiveMaterialTypes: () =>
     api.get('/depot/batch-orders/active-material-types'),
 
+  setBatchTransport: (id, transportType) =>
+    api.patch(`/depot/batch-orders/${id}/transport`, { transportType }),
+
   // ── Invoices ──────────────────────────────────────────────────────────────
   getInvoices: () =>
     api.get('/depot/invoices'),
+
+  // ── Profile ────────────────────────────────────────────────────────────────
+  getProfile: () =>
+    api.get('/depot/profile'),
+
+  updateProfile: (dto) =>
+    api.put('/depot/profile', dto),
 };

@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { depotService } from '../../services/depotService';
 
-// ── Định cấu hình 4 bước ──────────────────────────────────────────────────
+// ── Định cấu hình 3 bước ──────────────────────────────────────────────────
 const STEPS = [
     { num: 1, title: 'Thông tin chung', desc: 'Loại phế liệu & Số lượng' },
     { num: 2, title: 'Nguồn gốc phế liệu', desc: 'Tỷ lệ thu gom thực tế' },
-    { num: 3, title: 'Đơn vị vận chuyển', desc: 'Lựa chọn phương thức gửi' },
-    { num: 4, title: 'Xác nhận & Hoàn tất', desc: 'Đăng bán hoặc Lưu nháp' },
+    { num: 3, title: 'Xác nhận & Hoàn tất', desc: 'Đăng bán lên chợ' },
 ];
 
 const PRIMARY_COLOR = '#16a34a'; // Xanh lá thương hiệu
@@ -22,6 +21,7 @@ export default function CreateBatchOrder() {
     const [loading, setLoading] = useState(false);
     const [inventoryList, setInventoryList] = useState([]);
     const [activeMaterialTypes, setActiveMaterialTypes] = useState([]); // Loại đã có lô đang hoạt động
+    const [depotProfile, setDepotProfile] = useState(null);
 
     const [form, setForm] = useState({
         wasteType: '',         // Loại phế liệu (tên hiển thị)
@@ -38,12 +38,7 @@ export default function CreateBatchOrder() {
             stores: 30,
             offices: 20,
         },
-
-        // Bước 3: Vận chuyển
-        carrierId: 'carrier-fast',
-        buyer: 'Nhà máy Tái chế Nhựa Hùng Cường',
-        deliveryDate: '2026-03-01',
-        transportType: 'DEPOT_SHIPPED', // DEPOT_SHIPPED hoặc FACTORY_PICKUP
+        // Ghi chú: phương thức vận chuyển sẽ chọn SAU khi nhà máy xác nhận
     });
 
     // Load tồn kho và danh sách loại vật liệu đang có lô hoạt động
@@ -59,6 +54,17 @@ export default function CreateBatchOrder() {
             });
         depotService.getActiveMaterialTypes()
             .then(data => setActiveMaterialTypes(data || []))
+            .catch(() => {});
+        depotService.getProfile()
+            .then(data => {
+                setDepotProfile(data);
+                if (data && data.address) {
+                    updateForm('location', data.address);
+                } else if (data && data.latitude && data.longitude) {
+                    const loc = `${data.latitude}, ${data.longitude}`;
+                    updateForm('location', loc);
+                }
+            })
             .catch(() => {});
     }, []);
 
@@ -85,16 +91,51 @@ export default function CreateBatchOrder() {
         }));
     };
 
-    // Lấy vị trí GPS hiện tại của kho vựa
+    // Lấy vị trí GPS hiện tại của kho vựa và lưu vào profile dạng Địa chỉ chữ
     const handleGetWarehouseGPS = () => {
         if (!navigator.geolocation) {
             alert('Trình duyệt của bạn không hỗ trợ định vị GPS.');
             return;
         }
         navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const coordsString = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)} (Định vị GPS)`;
-                updateForm('location', coordsString);
+            async (pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                
+                try {
+                    // Gọi OpenStreetMap Nominatim reverse geocoding để lấy địa chỉ dạng chữ
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=vi`
+                    );
+                    const data = await res.json();
+                    const addressStr = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                    
+                    updateForm('location', addressStr);
+
+                    // Cập nhật lên server cả địa chỉ chữ lẫn tọa độ Latitude, Longitude
+                    await depotService.updateProfile({
+                        companyName: depotProfile?.companyName,
+                        contactPerson: depotProfile?.contactPerson,
+                        contactPhone: depotProfile?.contactPhone,
+                        taxCode: depotProfile?.taxCode,
+                        address: addressStr,
+                        latitude: lat,
+                        longitude: lng
+                    });
+
+                    setDepotProfile(prev => ({
+                        ...prev,
+                        address: addressStr,
+                        latitude: lat,
+                        longitude: lng
+                    }));
+                    
+                    alert('Đã cập nhật vị trí địa chỉ & tọa độ GPS thành công vào Hồ Sơ Kho!');
+                } catch (err) {
+                    console.error('Lỗi định vị vị trí hoặc cập nhật GPS:', err);
+                    const fallback = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                    updateForm('location', fallback);
+                }
             },
             (() => {
                 alert('Không thể truy cập GPS thiết bị. Vui lòng cấp quyền vị trí.');
@@ -309,43 +350,13 @@ export default function CreateBatchOrder() {
                         </div>
                     )}
 
-                    {/* BƯỚC 3: VẬN CHUYỂN */}
+
+                    {/* BƯỚC 3: XÁC NHẬN & HOÀN TẤT */}
                     {step === 3 && (
                         <div className="space-y-6">
                             <div>
-                                <h3 className="font-extrabold text-slate-800 text-base">Phương thức vận chuyển</h3>
-                                <p className="text-xs text-slate-400 mt-1">Chọn phương thức gửi hàng đến nhà máy đối tác.</p>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button type="button" onClick={() => updateForm('transportType', 'DEPOT_SHIPPED')}
-                                        className={`p-4 rounded-xl border text-left transition-all ${form.transportType === 'DEPOT_SHIPPED' ? 'border-green-600 bg-green-50/50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                                        <p className="font-bold text-slate-800 text-sm">Kho tự vận chuyển</p>
-                                        <p className="text-xs text-slate-400 mt-1">Sử dụng tài xế liên kết của hệ thống gửi trực tiếp cho nhà máy.</p>
-                                    </button>
-                                    <button type="button" onClick={() => updateForm('transportType', 'FACTORY_PICKUP')}
-                                        className={`p-4 rounded-xl border text-left transition-all ${form.transportType === 'FACTORY_PICKUP' ? 'border-green-600 bg-green-50/50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                                        <p className="font-bold text-slate-800 text-sm">Nhà máy đến lấy</p>
-                                        <p className="text-xs text-slate-400 mt-1">Nhà máy trúng thầu tự điều xe tải đến lấy hàng tại kho.</p>
-                                    </button>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Đơn vị mua đích danh (Tuỳ chọn)</label>
-                                    <input type="text" value={form.buyer} onChange={e => updateForm('buyer', e.target.value)}
-                                        className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* BƯỚC 4: XÁC NHẬN & HOÀN TẤT */}
-                    {step === 4 && (
-                        <div className="space-y-6">
-                            <div>
                                 <h3 className="font-extrabold text-slate-800 text-base">Xác nhận đóng lô hàng</h3>
-                                <p className="text-xs text-slate-400 mt-1">Vui lòng kiểm tra lại thông tin lô hàng trước khi lưu hoặc đăng bán công khai.</p>
+                                <p className="text-xs text-slate-400 mt-1">Kiểm tra lại thông tin trước khi đăng bán công khai lên chợ.</p>
                             </div>
 
                             <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-3">
@@ -369,6 +380,11 @@ export default function CreateBatchOrder() {
                                     <span className="text-slate-700">Giá trị lô hàng ước tính:</span>
                                     <span className="text-green-700">{vnd(parseFloat(form.totalKg || 0) * parseInt(form.unitPrice || 0))}</span>
                                 </div>
+                            </div>
+
+                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                                <p className="text-xs font-bold text-amber-700">⏳ Phương thức vận chuyển</p>
+                                <p className="text-xs text-amber-600 mt-1">Bạn sẽ chọn phương thức vận chuyển <strong>sau khi nhà máy xác nhận</strong> mua lô hàng này. Sau đó, vào “Quản lý lô xuất” để hoàn tất.</p>
                             </div>
                         </div>
                     )}

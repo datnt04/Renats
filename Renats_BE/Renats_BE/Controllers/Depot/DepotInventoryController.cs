@@ -93,6 +93,18 @@ public class DepotInventoryController : ControllerBase
             _                  => "Khác",
         };
 
+        static string LabelToType(string label) => label switch
+        {
+            "Sắt vụn"          => "IRON",
+            "Thép phế liệu"    => "STEEL",
+            "Đồng cáp"         => "COPPER",
+            "Nhôm phế liệu"    => "ALUMINUM",
+            "Giấy Carton"      => "PAPER",
+            "Nhựa cứng (PP/PE)"=> "PET",
+            "Pin / Acquy cũ"   => "ELECTRONIC_WASTE",
+            _                  => "OTHER",
+        };
+
         // Nhóm inbound theo label
         var inventory = inbound.Select(i =>
         {
@@ -104,6 +116,7 @@ public class DepotInventoryController : ControllerBase
             return new
             {
                 type    = i.MaterialLabel,
+                key     = LabelToType(i.MaterialLabel),
                 current = Math.Max(0, current),
                 unit    = "kg",
             };
