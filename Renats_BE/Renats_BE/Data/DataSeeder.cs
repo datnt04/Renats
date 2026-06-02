@@ -167,6 +167,8 @@ public static class DataSeeder
             Province       = "Bình Dương",
             ContactPerson  = "Nguyễn Văn Minh",
             ContactPhone   = "0901234567",
+            Latitude       = 10.8812m,
+            Longitude      = 106.5123m,
             IsPremium      = false,         // Mặc định không premium (như nhà máy mới đăng ký)
             PremiumExpiresAt = null,
             CreatedAt      = DateTime.UtcNow
@@ -389,9 +391,109 @@ public static class DataSeeder
         db.BatchOrders.Add(batchOrder);
         await db.SaveChangesAsync();
 
+        // ─── 3. Seed Driver ───────────────────────────────────────────────────
+        var driverUserId = Guid.Parse("22222222-0000-0000-0000-000000000005");
+        var driverId     = Guid.Parse("44444444-0000-0000-0000-000000000001");
+
+        await db.Database.ExecuteSqlRawAsync($@"
+            INSERT INTO users (id, email, password_hash, role, full_name, phone, is_active, created_at, updated_at)
+            VALUES (
+                '{driverUserId}', 'driver@renats.vn', 'Renats@2025',
+                'DRIVER'::user_role, 'Tài xế Nguyễn Văn Minh', '0988777666',
+                true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            );
+        ");
+
+        var driver = new Driver
+        {
+            Id = driverId,
+            UserId = driverUserId,
+            LicenseNumber = "GX-88291-2026",
+            VehiclePlate = "51C-882.91",
+            VehicleType = "Xe tải 2.5 Tấn",
+            MaxCapacityKg = 2500m,
+            IsAvailable = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        db.Drivers.Add(driver);
+        await db.SaveChangesAsync();
+
+        // ─── TransportJob for verified batchOrder ────────────────────────────
+        var transportJobId = Guid.NewGuid();
+        var transportJob = new TransportJob
+        {
+            Id = transportJobId,
+            BatchOrderId = batchOrder.Id,
+            DriverId = driverId,
+            PickupAddress = "Điểm tập kết phế liệu Quận 9, TP.HCM",
+            DeliveryAddress = depot1.Address,
+            PickupLatitude = 10.7876m,
+            PickupLongitude = 106.6346m,
+            DeliveryLatitude = depot1.Latitude,
+            DeliveryLongitude = depot1.Longitude,
+            EstimatedDistanceKm = 15.2m,
+            TransportFee = 250000m,
+            Status = TransportStatus.DELIVERED,
+            PickupTime = DateTime.UtcNow.AddDays(-9),
+            DeliveredTime = DateTime.UtcNow.AddDays(-8),
+            CreatedAt = DateTime.UtcNow.AddDays(-9)
+        };
+
+        db.TransportJobs.Add(transportJob);
+        await db.SaveChangesAsync();
+
+        // ─── TrackingLogs for verified order ─────────────────────────────────
+        db.TransportTrackingLogs.AddRange(
+            new TransportTrackingLog { TransportJobId = transportJobId, Latitude = 10.7876m, Longitude = 106.6346m, Note = "[Check-in Nguồn] Tài xế check-in cổng Điểm tập kết phế liệu", CreatedAt = DateTime.UtcNow.AddDays(-9).AddHours(1) },
+            new TransportTrackingLog { TransportJobId = transportJobId, Latitude = 10.7876m, Longitude = 106.6346m, Note = "[Check-out Nguồn] Xác thực hồ sơ thu gom thành công", CreatedAt = DateTime.UtcNow.AddDays(-9).AddHours(2) },
+            new TransportTrackingLog { TransportJobId = transportJobId, Latitude = 10.8231m, Longitude = 106.6297m, Note = "[Check-in Vựa] Check-in tại Vựa Phế Liệu Minh Khôi", CreatedAt = DateTime.UtcNow.AddDays(-9).AddHours(3) },
+            new TransportTrackingLog { TransportJobId = transportJobId, Latitude = 10.8231m, Longitude = 106.6297m, Note = "[Check-out Vựa] Chốt xuất kho vựa. Vận chuyển về nhà máy tái chế", CreatedAt = DateTime.UtcNow.AddDays(-9).AddHours(4) },
+            new TransportTrackingLog { TransportJobId = transportJobId, Latitude = 10.8812m, Longitude = 106.5123m, Note = "[Check-in Nhà Máy] Xe tải cập bến cổng bảo vệ nhà máy Re-Nats Long An", CreatedAt = DateTime.UtcNow.AddDays(-9).AddHours(5) }
+        );
+        await db.SaveChangesAsync();
+
+        // ─── Active Order (ACCEPTED) for BATCH-2601 so user can test simulator ─
+        var listedBatch1 = batches.First(b => b.BatchCode == "BATCH-2601");
+        listedBatch1.Status = BatchStatus.ACCEPTED;
+        listedBatch1.AcceptedAt = DateTime.UtcNow.AddHours(-2);
+        listedBatch1.UpdatedAt = DateTime.UtcNow;
+
+        var activeOrder = new BatchOrder
+        {
+            Id = Guid.NewGuid(),
+            BatchId = listedBatch1.Id,
+            FactoryId = factoryId,
+            AgreedPrice = listedBatch1.UnitPrice ?? 3200m,
+            TotalAmount = listedBatch1.EstimatedWeightKg * (listedBatch1.UnitPrice ?? 3200m),
+            Status = BatchStatus.ACCEPTED,
+            CreatedAt = DateTime.UtcNow.AddHours(-2)
+        };
+        db.BatchOrders.Add(activeOrder);
+        await db.SaveChangesAsync();
+
+        var activeTransport = new TransportJob
+        {
+            Id = Guid.NewGuid(),
+            BatchOrderId = activeOrder.Id,
+            DriverId = driverId,
+            PickupAddress = "Điểm tập kết phế liệu Quận 9, TP.HCM",
+            DeliveryAddress = depot1.Address,
+            PickupLatitude = 10.7876m,
+            PickupLongitude = 106.6346m,
+            DeliveryLatitude = depot1.Latitude,
+            DeliveryLongitude = depot1.Longitude,
+            EstimatedDistanceKm = 15.2m,
+            TransportFee = 250000m,
+            Status = TransportStatus.ASSIGNED,
+            CreatedAt = DateTime.UtcNow.AddHours(-2)
+        };
+        db.TransportJobs.Add(activeTransport);
+        await db.SaveChangesAsync();
+
         Console.WriteLine("✅ [Seeder] Đã seed Factory, 3 Depots, 5 InventoryBatches.");
         Console.WriteLine("   📧 factory@renats.vn  |  🔑 Renats@2025");
         Console.WriteLine("   📧 depot1@renats.vn   |  🔑 Renats@2025");
+        Console.WriteLine("   📧 driver@renats.vn   |  🔑 Renats@2025");
     }
 }
 

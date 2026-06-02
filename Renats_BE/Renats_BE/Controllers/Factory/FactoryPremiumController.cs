@@ -100,7 +100,11 @@ public class FactoryPremiumController : ControllerBase
         return Ok(new
         {
             isPremium,
-            expiresAt = factoryObj.PremiumExpiresAt
+            expiresAt = factoryObj.PremiumExpiresAt,
+            latitude = factoryObj.Latitude ?? 10.8812m,
+            longitude = factoryObj.Longitude ?? 106.5123m,
+            companyName = factoryObj.CompanyName,
+            address = factoryObj.Address
         });
     }
 

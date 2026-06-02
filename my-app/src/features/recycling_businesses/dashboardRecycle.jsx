@@ -153,8 +153,8 @@ const DashboardRecycle = () => {
             case 'ON_THE_WAY':
             case 'PICKED_UP':
                 return (
-                    <Link to="/recycle/order-process" className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-all shadow-sm animate-pulse">
-                        Đang đến (Cân KCS)
+                    <Link to="/recycle/order-tracking" className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-all shadow-sm animate-pulse">
+                        Đang đến (Theo dõi xe)
                     </Link>
                 );
             default:
@@ -287,7 +287,7 @@ const DashboardRecycle = () => {
                         </div>
                         <div className="flex items-center text-sm">
                             <span className="text-slate-500">Đang xếp nốt hàng chờ: <span className="font-bold text-slate-700">{kpis.inTransitCount} xe</span></span>
-                            <Link to="/recycle/order-process" className="ml-auto text-primary text-xs font-bold hover:underline">Quản lý trạm cân</Link>
+                            <Link to="/recycle/order-tracking" className="ml-auto text-primary text-xs font-bold hover:underline">Theo dõi lộ trình</Link>
                         </div>
                     </div>
                 </div>

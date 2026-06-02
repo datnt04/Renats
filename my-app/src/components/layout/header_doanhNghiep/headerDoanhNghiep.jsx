@@ -57,6 +57,7 @@ const HeaderDoanhNghiep = ({ activeTab = '' }) => {
     const navItems = [
         { key: 'dashboard', label: 'Tổng Quan', to: '/recycle/dashboard' },
         { key: 'market', label: 'Chợ Nguyên Liệu', to: '/recycle/market' },
+        { key: 'orders', label: 'Theo dõi đơn hàng', to: '/recycle/order-tracking' },
         { key: 'partners', label: 'Danh Sách Vựa', to: '/nha-may/doi-tac' },
         { key: 'map', label: 'Bản đồ', to: '/nha-may/map' },
         { key: 'report', label: 'Báo cáo & Dữ liệu', to: '/nha-may/bao-cao-epr' },

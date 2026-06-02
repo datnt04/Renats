@@ -70,4 +70,8 @@ export const factoryService = {
 
   subscribePremium: (plan) =>
     api.post('/factory/premium/subscribe', { factoryId: getFactoryId(), plan }),
+
+  // ── Simulation ──
+  simulateStep: (orderId, data) =>
+    api.post(`/factory/orders/${orderId}/simulate-step`, data),
 };
