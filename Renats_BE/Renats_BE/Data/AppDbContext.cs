@@ -81,15 +81,26 @@ public class AppDbContext : DbContext
             e.Property(f => f.Address).HasColumnName("address");
             e.Property(f => f.City).HasColumnName("city").HasMaxLength(100);
             e.Property(f => f.Province).HasColumnName("province").HasMaxLength(100);
+            e.Property(f => f.IndustrialZone).HasColumnName("industrial_zone").HasMaxLength(255);
             e.Property(f => f.Latitude).HasColumnName("latitude").HasPrecision(10, 7);
             e.Property(f => f.Longitude).HasColumnName("longitude").HasPrecision(10, 7);
             e.Property(f => f.ContactPerson).HasColumnName("contact_person").HasMaxLength(255);
             e.Property(f => f.ContactPhone).HasColumnName("contact_phone").HasMaxLength(20);
+            // Profile fields
+            e.Property(f => f.PrimaryMaterialType).HasColumnName("primary_material_type").HasConversion<string>();
+            e.Property(f => f.AcceptedMaterialTypes).HasColumnName("accepted_material_types");
+            e.Property(f => f.CapacityPerMonthTon).HasColumnName("capacity_per_month_ton").HasPrecision(12, 2);
+            e.Property(f => f.MinPurityRequired).HasColumnName("min_purity_required").HasPrecision(5, 2);
+            e.Property(f => f.BusinessLicenseUrl).HasColumnName("business_license_url");
+            e.Property(f => f.EnvironmentLicenseUrl).HasColumnName("environment_license_url");
+            e.Property(f => f.IsProfileComplete).HasColumnName("is_profile_complete");
+            // Premium
             e.Property(f => f.IsPremium).HasColumnName("is_premium");
             e.Property(f => f.PremiumExpiresAt).HasColumnName("premium_expires_at");
             e.Property(f => f.CreatedAt).HasColumnName("created_at");
             e.HasOne(f => f.User).WithOne(u => u.Factory).HasForeignKey<Factory>(f => f.UserId);
         });
+
 
         modelBuilder.Entity<Depot>(e =>
         {

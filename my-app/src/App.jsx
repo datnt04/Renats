@@ -33,6 +33,8 @@ import PremiumMarket from './features/recycling_businesses/premiumMarket';
 import OrderProcess from './features/recycling_businesses/orderProcess';
 import OrderConfirm from './features/recycling_businesses/orderConfirm';
 import OrderTracking from './features/recycling_businesses/orderTracking';
+import FactoryProfileSetup from './features/recycling_businesses/FactoryProfileSetup';
+import FactoryProfileGuard from './app/FactoryProfileGuard';
 
 // Transportation (DRIVER)
 import TransportationMarketplace from './features/transportation/marketplace';
@@ -84,18 +86,22 @@ function App() {
           <Route path="/kho/yeu-cau/:id" element={<P roles={['DEPOT']}><PickupRequestDetail /></P>} />
 
           {/* ── FACTORY (Nhà máy) routes ── */}
-          <Route path="/nha-may/map" element={<P roles={['FACTORY']}><MapVip /></P>} />
-          <Route path="/nha-may/premium" element={<P roles={['FACTORY']}><BuyPremium /></P>} />
-          <Route path="/nha-may/doi-tac" element={<P roles={['FACTORY']}><PartnerListLock /></P>} />
-          <Route path="/nha-may/bao-cao-epr" element={<P roles={['FACTORY']}><EprReport /></P>} />
-          <Route path="/nha-may/bao-cao-epr/:id" element={<P roles={['FACTORY']}><EprInforOrder /></P>} />
-          <Route path="/nha-may/doi-tac/:id" element={<P roles={['FACTORY']}><InforPartnerVip /></P>} />
+          {/* Route setup profile: không bọc guard để tránh vòng lặp redirect */}
+          <Route path="/nha-may/setup-profile" element={<P roles={['FACTORY']}><FactoryProfileSetup /></P>} />
+
+          {/* Tất cả FACTORY routes còn lại bắt buộc phải có profile hoàn chỉnh */}
+          <Route path="/nha-may/map" element={<P roles={['FACTORY']}><FactoryProfileGuard><MapVip /></FactoryProfileGuard></P>} />
+          <Route path="/nha-may/premium" element={<P roles={['FACTORY']}><FactoryProfileGuard><BuyPremium /></FactoryProfileGuard></P>} />
+          <Route path="/nha-may/doi-tac" element={<P roles={['FACTORY']}><FactoryProfileGuard><PartnerListLock /></FactoryProfileGuard></P>} />
+          <Route path="/nha-may/bao-cao-epr" element={<P roles={['FACTORY']}><FactoryProfileGuard><EprReport /></FactoryProfileGuard></P>} />
+          <Route path="/nha-may/bao-cao-epr/:id" element={<P roles={['FACTORY']}><FactoryProfileGuard><EprInforOrder /></FactoryProfileGuard></P>} />
+          <Route path="/nha-may/doi-tac/:id" element={<P roles={['FACTORY']}><FactoryProfileGuard><InforPartnerVip /></FactoryProfileGuard></P>} />
           <Route path="/recycle/dashboard" element={<P roles={['FACTORY']}><DashboardRecycle /></P>} />
-          <Route path="/recycle/market" element={<P roles={['FACTORY']}><MaterialsMarket /></P>} />
-          <Route path="/recycle/market-premium" element={<P roles={['FACTORY']}><PremiumMarket /></P>} />
-          <Route path="/recycle/order-process" element={<P roles={['FACTORY']}><OrderProcess /></P>} />
-          <Route path="/recycle/order-confirm" element={<P roles={['FACTORY']}><OrderConfirm /></P>} />
-          <Route path="/recycle/order-tracking" element={<P roles={['FACTORY']}><OrderTracking /></P>} />
+          <Route path="/recycle/market" element={<P roles={['FACTORY']}><FactoryProfileGuard><MaterialsMarket /></FactoryProfileGuard></P>} />
+          <Route path="/recycle/market-premium" element={<P roles={['FACTORY']}><FactoryProfileGuard><PremiumMarket /></FactoryProfileGuard></P>} />
+          <Route path="/recycle/order-process" element={<P roles={['FACTORY']}><FactoryProfileGuard><OrderProcess /></FactoryProfileGuard></P>} />
+          <Route path="/recycle/order-confirm" element={<P roles={['FACTORY']}><FactoryProfileGuard><OrderConfirm /></FactoryProfileGuard></P>} />
+          <Route path="/recycle/order-tracking" element={<P roles={['FACTORY']}><FactoryProfileGuard><OrderTracking /></FactoryProfileGuard></P>} />
 
           {/* ── DRIVER (Tài xế) routes ── */}
           <Route path="/transport/market" element={<P roles={['DRIVER']}><TransportationMarketplace /></P>} />

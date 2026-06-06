@@ -1,14 +1,29 @@
 import { api } from './api';
 
-// ── Lấy factoryId từ session (lưu khi login/register) ─────────────────────────
+// ── Lấy factoryId từ session ───────────────────────────────────────────────────
 function getFactoryId() {
   try {
     const raw = localStorage.getItem('renats_user');
     const user = raw ? JSON.parse(raw) : null;
-    // profileId được trả từ BE sau khi login/register (factoryId thật trong DB)
     if (user?.profileId) return user.profileId;
   } catch { /* ignore */ }
-  return null; // Không fallback hardcoded nữa → BE sẽ trả 400/404 nếu thiếu ID
+  return null;
+}
+
+// ── Lấy profile nhà máy đã lưu (sau khi setup) ────────────────────────────────
+export function getFactoryProfile() {
+  try {
+    const raw = localStorage.getItem('renats_factory_profile');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+export function saveFactoryProfile(profile) {
+  localStorage.setItem('renats_factory_profile', JSON.stringify(profile));
+}
+
+export function clearFactoryProfile() {
+  localStorage.removeItem('renats_factory_profile');
 }
 
 export const factoryService = {
@@ -25,8 +40,46 @@ export const factoryService = {
   getChartData: (range = 'week') =>
     api.get('/factory/dashboard/chart', { factoryId: getFactoryId(), range }),
 
+  // ── Profile ──
+  getProfile: () =>
+    api.get('/factory/profile'),
+
+  updateProfile: (data) =>
+    api.put('/factory/profile', data),
+
+  uploadDocument: async (file, documentType = 'business_license') => {
+    const token = localStorage.getItem('renats_token');
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('documentType', documentType);
+
+    const BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:7088/api';
+    const res = await fetch(`${BASE_URL}/factory/profile/upload-document`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
   // ── Market ──
-  getBatches: (params = {}) =>
+  getBatches: (params = {}) => {
+    // Tự động truyền materialType từ profile nhà máy
+    const profile = getFactoryProfile();
+    const materialType = profile?.primaryMaterialType;
+    return api.get('/factory/market/batches', {
+      factoryId: getFactoryId(),
+      ...(materialType ? { material: materialType } : {}),
+      ...params,
+    });
+  },
+
+  getBatchesAll: (params = {}) =>
     api.get('/factory/market/batches', { factoryId: getFactoryId(), ...params }),
 
   getBatchDetail: (id) =>
@@ -75,3 +128,4 @@ export const factoryService = {
   simulateStep: (orderId, data) =>
     api.post(`/factory/orders/${orderId}/simulate-step`, data),
 };
+

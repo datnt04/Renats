@@ -1,7 +1,19 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
+import { factoryService, saveFactoryProfile } from '../services/factoryService';
 
 const AuthContext = createContext(null);
+
+// Helper: Sau khi FACTORY login, load profile từ BE và lưu localStorage
+async function syncFactoryProfile(role) {
+  if (role !== 'FACTORY') return;
+  try {
+    const profile = await factoryService.getProfile();
+    if (profile) saveFactoryProfile(profile);
+  } catch {
+    // Bỏ qua lỗi (mạng, BE chưa khởi động) — guard sẽ redirect đến setup
+  }
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null);
@@ -9,7 +21,11 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const session = authService.getSession();
-    if (session) setUser(session);
+    if (session) {
+      setUser(session);
+      // Khi reload trang, sync lại profile nếu là FACTORY
+      syncFactoryProfile(session.role);
+    }
     setLoading(false);
   }, []);
 
@@ -17,7 +33,9 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const res = await authService.login(email, password);
     authService.saveSession(res);
-    setUser({ userId: res.userId, role: res.role, fullName: res.fullName, email: res.email });
+    const u = { userId: res.userId, role: res.role, fullName: res.fullName, email: res.email };
+    setUser(u);
+    await syncFactoryProfile(res.role);
     return res;
   };
 
@@ -25,7 +43,9 @@ export function AuthProvider({ children }) {
   const register = async (data) => {
     const res = await authService.register(data);
     authService.saveSession(res);
-    setUser({ userId: res.userId, role: res.role, fullName: res.fullName, email: res.email });
+    const u = { userId: res.userId, role: res.role, fullName: res.fullName, email: res.email };
+    setUser(u);
+    await syncFactoryProfile(res.role);
     return res;
   };
 
@@ -33,7 +53,9 @@ export function AuthProvider({ children }) {
   const loginWithGoogle = async (idToken, role = null) => {
     const res = await authService.loginWithGoogle(idToken, role);
     authService.saveSession(res);
-    setUser({ userId: res.userId, role: res.role, fullName: res.fullName, email: res.email });
+    const u = { userId: res.userId, role: res.role, fullName: res.fullName, email: res.email };
+    setUser(u);
+    await syncFactoryProfile(res.role);
     return res;
   };
 
@@ -41,7 +63,9 @@ export function AuthProvider({ children }) {
   const loginWithFacebook = async (accessToken, role = null) => {
     const res = await authService.loginWithFacebook(accessToken, role);
     authService.saveSession(res);
-    setUser({ userId: res.userId, role: res.role, fullName: res.fullName, email: res.email });
+    const u = { userId: res.userId, role: res.role, fullName: res.fullName, email: res.email };
+    setUser(u);
+    await syncFactoryProfile(res.role);
     return res;
   };
 
@@ -59,3 +83,6 @@ export function AuthProvider({ children }) {
 }
 
 export const useAuth = () => useContext(AuthContext);
+
+
+

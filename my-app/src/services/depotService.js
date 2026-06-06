@@ -63,4 +63,13 @@ export const depotService = {
 
   updateProfile: (dto) =>
     api.put('/depot/profile', dto),
+
+  // ── Factory Finder (chọn nhà máy nhận lô) ───────────────────────────────
+  getMatchingFactories: (materialType, depotLat, depotLng) => {
+    const params = {};
+    if (materialType) params.materialType = materialType;
+    if (depotLat != null) params.depotLat = depotLat;
+    if (depotLng != null) params.depotLng = depotLng;
+    return api.get('/depot/factories', params);
+  },
 };

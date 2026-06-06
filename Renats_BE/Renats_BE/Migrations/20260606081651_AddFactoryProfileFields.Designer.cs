@@ -12,8 +12,8 @@ using Renats_BE.Data;
 namespace Renats_BE.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260602014125_AddPremiumFieldsToFactory")]
-    partial class AddPremiumFieldsToFactory
+    [Migration("20260606081651_AddFactoryProfileFields")]
+    partial class AddFactoryProfileFields
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

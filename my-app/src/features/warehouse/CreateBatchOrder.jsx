@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { depotService } from '../../services/depotService';
+import FactoryPickerModal from './FactoryPickerModal';
 
 // ── Định cấu hình 3 bước ──────────────────────────────────────────────────
 const STEPS = [
@@ -20,8 +21,10 @@ export default function CreateBatchOrder() {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [inventoryList, setInventoryList] = useState([]);
-    const [activeMaterialTypes, setActiveMaterialTypes] = useState([]); // Loại đã có lô đang hoạt động
+    const [activeMaterialTypes, setActiveMaterialTypes] = useState([]);
     const [depotProfile, setDepotProfile] = useState(null);
+    const [showFactoryPicker, setShowFactoryPicker] = useState(false);
+    const [selectedFactory, setSelectedFactory] = useState(null);
 
     const [form, setForm] = useState({
         wasteType: '',         // Loại phế liệu (tên hiển thị)
@@ -158,7 +161,7 @@ export default function CreateBatchOrder() {
                 location:        form.location,
                 note:            form.note,
                 carrierId:       form.carrierId,
-                buyer:           form.buyer,
+                buyer:           selectedFactory?.id || form.buyer,
                 deliveryDate:    form.deliveryDate,
                 transportType:   form.transportType,
                 unitPrice:       parseFloat(form.unitPrice),
@@ -177,6 +180,7 @@ export default function CreateBatchOrder() {
     };
 
     return (
+        <>
         <div className="font-sans bg-slate-50 min-h-screen flex flex-col">
             {/* Header */}
             <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
@@ -350,8 +354,6 @@ export default function CreateBatchOrder() {
                         </div>
                     )}
 
-
-                    {/* BƯỚC 3: XÁC NHẬN & HOÀN TẤT */}
                     {step === 3 && (
                         <div className="space-y-6">
                             <div>
@@ -382,9 +384,64 @@ export default function CreateBatchOrder() {
                                 </div>
                             </div>
 
+                            {/* ── Chọn nhà máy nhận lô ─────────────────── */}
+                            <div>
+                                <div className="flex items-center justify-between mb-3">
+                                    <div>
+                                        <p className="font-bold text-slate-800 text-sm">Nhà máy tái chế nhận lô</p>
+                                        <p className="text-xs text-slate-400 mt-0.5">Chọn nhà máy phù hợp với loại phế liệu, gần kho bạn nhất</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowFactoryPicker(true)}
+                                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm"
+                                    >
+                                        <span className="material-symbols-outlined text-base">factory</span>
+                                        {selectedFactory ? 'Đổi nhà máy' : 'Chọn nhà máy'}
+                                    </button>
+                                </div>
+
+                                {selectedFactory ? (
+                                    <div className="flex items-start gap-3 p-4 bg-green-50 border-2 border-green-400 rounded-2xl">
+                                        <div className="w-11 h-11 rounded-xl bg-green-100 flex items-center justify-center text-xl shrink-0">🏭</div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-bold text-slate-800 text-sm">{selectedFactory.companyName}</p>
+                                                {selectedFactory.isPremium && (
+                                                    <span className="text-[10px] font-bold bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full">⭐ PREMIUM</span>
+                                                )}
+                                            </div>
+                                            <p className="text-xs text-slate-500">{selectedFactory.address || selectedFactory.province}</p>
+                                            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                                                {selectedFactory.capacityPerMonthTon && (
+                                                    <span className="text-xs text-slate-500">🏋️ {selectedFactory.capacityPerMonthTon.toLocaleString('vi-VN')} tấn/tháng</span>
+                                                )}
+                                                {selectedFactory.distanceKm != null && (
+                                                    <span className="text-xs font-bold text-green-700">📍 Cách {selectedFactory.distanceKm} km</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedFactory(null)}
+                                            className="text-slate-400 hover:text-red-500 transition text-xs"
+                                        >✕</button>
+                                    </div>
+                                ) : (
+                                    <div
+                                        onClick={() => setShowFactoryPicker(true)}
+                                        className="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center cursor-pointer hover:border-green-400 hover:bg-green-50 transition"
+                                    >
+                                        <span className="material-symbols-outlined text-3xl text-slate-300">factory</span>
+                                        <p className="text-slate-400 text-sm font-semibold mt-1">Chưa chọn nhà máy</p>
+                                        <p className="text-slate-400 text-xs mt-0.5">Lô sẽ được đăng bán công khai trên chợ</p>
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                                 <p className="text-xs font-bold text-amber-700">⏳ Phương thức vận chuyển</p>
-                                <p className="text-xs text-amber-600 mt-1">Bạn sẽ chọn phương thức vận chuyển <strong>sau khi nhà máy xác nhận</strong> mua lô hàng này. Sau đó, vào “Quản lý lô xuất” để hoàn tất.</p>
+                                <p className="text-xs text-amber-600 mt-1">Bạn sẽ chọn phương thức vận chuyển <strong>sau khi nhà máy xác nhận</strong> mua lô hàng này.</p>
                             </div>
                         </div>
                     )}
@@ -412,5 +469,21 @@ export default function CreateBatchOrder() {
                 </div>
             </main>
         </div>
+
+        {/* Factory Picker Modal */}
+        {showFactoryPicker && (
+            <FactoryPickerModal
+                materialType={form.materialTypeKey}
+                depotProfile={depotProfile}
+                onSelect={(factory) => {
+                    setSelectedFactory(factory);
+                    setShowFactoryPicker(false);
+                }}
+                onClose={() => setShowFactoryPicker(false)}
+            />
+        )}
+    </>
     );
 }
+
+

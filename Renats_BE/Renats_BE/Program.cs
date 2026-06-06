@@ -23,6 +23,8 @@ builder.Services.AddScoped<IPickupRequestRepository, PickupRequestRepository>();
 // ── Services ──────────────────────────────────────────────────────────────────
 builder.Services.AddScoped<ISellerService, SellerService>();
 builder.Services.AddScoped<IPickupRequestService, PickupRequestService>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+
 
 // ── HttpClient (dùng cho xác thực token Social từ Google/Facebook) ──────────
 builder.Services.AddHttpClient();
