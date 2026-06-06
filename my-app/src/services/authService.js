@@ -1,4 +1,5 @@
 import { api } from './api';
+import { clearFactoryProfile } from './factoryService';
 
 export const authService = {
   // ── Đăng nhập truyền thống ──────────────────────────────────────────────
@@ -44,6 +45,7 @@ export const authService = {
   logout: () => {
     localStorage.removeItem('renats_token');
     localStorage.removeItem('renats_user');
+    clearFactoryProfile(); // Xoá profile nhà máy khi đăng xuất
   },
 
   isLoggedIn: () => !!localStorage.getItem('renats_token'),

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import HeaderDoanhNghiep from '../../components/layout/header_doanhNghiep/headerDoanhNghiep';
-import { factoryService } from '../../services/factoryService';
+import { factoryService, getFactoryProfile } from '../../services/factoryService';
 
 const inlineStyle = `
   .sidebar-active {
@@ -167,6 +167,8 @@ const DashboardRecycle = () => {
     };
 
     const totalKg = breakdown.reduce((sum, item) => sum + item.totalKg, 0);
+    const profile = getFactoryProfile();
+    const isProfileIncomplete = !profile || !profile.isProfileComplete;
 
     return (
         <div className="font-sans text-slate-900 bg-slate-50 overflow-x-hidden min-h-screen flex flex-col">
@@ -195,6 +197,33 @@ const DashboardRecycle = () => {
                         </Link>
                     </div>
                 </div>
+
+                {/* ── Factory Profile Warning Banner (chỉ hiện khi chưa hoàn thành hồ sơ) ── */}
+                {isProfileIncomplete && (
+                    <div className="mb-8 bg-gradient-to-r from-red-600 to-amber-700 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg relative overflow-hidden">
+                        <div className="absolute inset-0 opacity-5">
+                            <span className="material-symbols-outlined text-[300px] text-white absolute -right-10 -top-10" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+                        </div>
+                        <div className="flex items-center gap-4 relative z-10">
+                            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-md shrink-0">
+                                <span className="material-symbols-outlined text-2xl text-red-700" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+                            </div>
+                            <div>
+                                <p className="text-white font-bold text-base">Hồ sơ nhà máy chưa hoàn thiện!</p>
+                                <p className="text-red-100 text-sm mt-0.5">
+                                    Vui lòng <strong className="text-white">chọn loại vật liệu tái chế chính</strong> và <strong className="text-white">tải lên giấy phép kinh doanh</strong> để bắt đầu giao dịch trên sàn, xem bản đồ VIP, và sử dụng đầy đủ tính năng.
+                                </p>
+                            </div>
+                        </div>
+                        <Link
+                            to="/nha-may/setup-profile"
+                            className="shrink-0 bg-white hover:bg-slate-100 text-red-700 font-extrabold px-6 py-3 rounded-xl shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-2 relative z-10 text-sm"
+                        >
+                            <span className="material-symbols-outlined text-lg">edit_document</span>
+                            Hoàn thiện hồ sơ ngay
+                        </Link>
+                    </div>
+                )}
 
                 {/* ── Premium Upsell Banner (chỉ hiện khi chưa Premium) ── */}
                 {!isPremium && (

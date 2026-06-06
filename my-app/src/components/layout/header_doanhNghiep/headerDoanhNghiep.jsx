@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../app/AuthContext';
+import { getFactoryProfile } from '../../../services/factoryService';
 
 // Icons matching SellerDashboard style
 const IconBell = () => (
@@ -42,9 +43,21 @@ const HeaderDoanhNghiep = ({ activeTab = '' }) => {
     const { user, logout } = useAuth();
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
-    // Dynamic user resolution with safe fallback
     const displayName = user?.fullName || 'Nhà máy Tái Chế A';
     const displayRole = 'Nhà máy';
+
+    // Lấy thông tin vật liệu chính từ profile đã lưu
+    const profile = getFactoryProfile();
+    const MATERIAL_ICONS = {
+        STEEL: { label: 'Sắt thép',  icon: '⚙️' }, ALUMINUM: { label: 'Nhôm',      icon: '🔩' },
+        COPPER: { label: 'Đồng',     icon: '🔶' }, LEAD:     { label: 'Chì/Ắc quy',icon: '🔋' },
+        PET:    { label: 'Nhựa PET', icon: '♻️' }, HDPE:     { label: 'Nhựa HDPE', icon: '🪣' },
+        PP:     { label: 'Nhựa PP',  icon: '🛒' }, PVC:      { label: 'Nhựa PVC',  icon: '🧱' },
+        CARDBOARD: { label: 'Giấy carton', icon: '📦' }, PAPER: { label: 'Giấy thải', icon: '📄' },
+        BATTERY: { label: 'Pin Lithium', icon: '⚡' }, ELECTRONIC_WASTE: { label: 'Điện tử', icon: '💻' },
+        RUBBER: { label: 'Cao su', icon: '🛞' }, OIL: { label: 'Dầu nhớt', icon: '🛢️' },
+    };
+    const matInfo = profile?.primaryMaterialType ? MATERIAL_ICONS[profile.primaryMaterialType] : null;
 
     const handleLogout = () => {
         setDropdownOpen(false);
@@ -116,7 +129,14 @@ const HeaderDoanhNghiep = ({ activeTab = '' }) => {
                             </div>
                             <div className="hidden sm:block text-left">
                                 <p className="text-sm font-bold text-slate-800 leading-none">{displayName}</p>
-                                <p className="text-xs text-slate-400 mt-0.5">{displayRole}</p>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <p className="text-xs text-slate-400">{displayRole}</p>
+                                    {matInfo && (
+                                        <span className="inline-flex items-center gap-0.5 bg-green-50 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-green-200">
+                                            {matInfo.icon} {matInfo.label}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <span className="text-slate-400 hidden sm:block">
                                 <IconChevron open={dropdownOpen} />
@@ -128,10 +148,15 @@ const HeaderDoanhNghiep = ({ activeTab = '' }) => {
                                 {/* Backdrop */}
                                 <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
                                 {/* Dropdown List */}
-                                <div className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-fade-in">
+                                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-fade-in">
                                     <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
                                         <p className="text-xs text-slate-400 font-semibold uppercase">Tài khoản</p>
                                         <p className="text-sm font-bold text-slate-700 mt-0.5 truncate">{displayName}</p>
+                                        {matInfo && (
+                                            <span className="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full mt-1">
+                                                {matInfo.icon} {matInfo.label}
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="py-1">
                                         <Link
@@ -141,6 +166,16 @@ const HeaderDoanhNghiep = ({ activeTab = '' }) => {
                                         >
                                             <IconHome />
                                             <span>Trang chủ nhà máy</span>
+                                        </Link>
+                                        <Link
+                                            to="/nha-may/setup-profile"
+                                            onClick={() => setDropdownOpen(false)}
+                                            className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                                            </svg>
+                                            <span>Hồ sơ nhà máy</span>
                                         </Link>
                                         <Link
                                             to="/nha-may/premium"
