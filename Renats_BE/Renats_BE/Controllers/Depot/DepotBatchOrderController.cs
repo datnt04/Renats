@@ -186,15 +186,83 @@ public class DepotBatchOrderController : ControllerBase
         if (batch.Status != BatchStatus.ACCEPTED)
             return BadRequest("Chỉ được chọn vận chuyển sau khi nhà máy xác nhận lô hàng");
 
-        if (!Enum.TryParse<TransportType>(dto.TransportType, ignoreCase: true, out var tt))
-            return BadRequest("Phương thức vận chuyển không hợp lệ");
+        TransportType tt;
+        if (dto.TransportType.Equals("RENATS_DRIVER", StringComparison.OrdinalIgnoreCase) ||
+            dto.TransportType.Equals("FACTORY_PICKUP", StringComparison.OrdinalIgnoreCase) ||
+            dto.TransportType.Equals("APP_LOGISTICS", StringComparison.OrdinalIgnoreCase))
+        {
+            tt = TransportType.APP_LOGISTICS;
+        }
+        else if (dto.TransportType.Equals("DEPOT_SELF", StringComparison.OrdinalIgnoreCase) ||
+                 dto.TransportType.Equals("DEPOT_SHIPPED", StringComparison.OrdinalIgnoreCase) ||
+                 dto.TransportType.Equals("SELF_DELIVERY", StringComparison.OrdinalIgnoreCase))
+        {
+            tt = TransportType.SELF_DELIVERY;
+        }
+        else
+        {
+            if (!Enum.TryParse<TransportType>(dto.TransportType, ignoreCase: true, out tt))
+                return BadRequest("Phương thức vận chuyển không hợp lệ");
+        }
 
         batch.TransportType = tt;
         batch.Status = BatchStatus.READY_FOR_PICKUP;
         batch.UpdatedAt = DateTime.UtcNow;
+
+        // Tự động tạo TransportJob nếu chọn Tài xế Re-Nats (APP_LOGISTICS)
+        if (tt == TransportType.APP_LOGISTICS)
+        {
+            var order = await _db.BatchOrders.FirstOrDefaultAsync(o => o.BatchId == batch.Id);
+            if (order != null)
+            {
+                var jobExists = await _db.TransportJobs.AnyAsync(j => j.BatchOrderId == order.Id);
+                if (!jobExists)
+                {
+                    var factory = await _db.Factories.FindAsync(order.FactoryId);
+                    
+                    // Tính toán khoảng cách (nếu có GPS)
+                    decimal distance = 15.2m;
+                    if (depot.Latitude.HasValue && depot.Longitude.HasValue && factory != null && factory.Latitude.HasValue && factory.Longitude.HasValue)
+                    {
+                        double dLat = (double)(factory.Latitude.Value - depot.Latitude.Value) * Math.PI / 180.0;
+                        double dLon = (double)(factory.Longitude.Value - depot.Longitude.Value) * Math.PI / 180.0;
+                        double lat1 = (double)depot.Latitude.Value * Math.PI / 180.0;
+                        double lat2 = (double)factory.Latitude.Value * Math.PI / 180.0;
+
+                        double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                                   Math.Sin(dLon / 2) * Math.Sin(dLon / 2) * Math.Cos(lat1) * Math.Cos(lat2);
+                        double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+                        distance = (decimal)(6371 * c);
+                        distance = Math.Round(distance, 1);
+                    }
+
+                    // Tính cước phí (Ví dụ: 15,000đ/km, tối thiểu 150,000đ)
+                    decimal fee = Math.Max(150000m, distance * 15000m);
+
+                    var transport = new TransportJob
+                    {
+                        Id = Guid.NewGuid(),
+                        BatchOrderId = order.Id,
+                        DriverId = null, // Chưa gán tài xế
+                        PickupAddress = depot.Address ?? "Kho Re-Nats",
+                        DeliveryAddress = factory?.Address ?? "Nhà máy tái chế",
+                        PickupLatitude = depot.Latitude,
+                        PickupLongitude = depot.Longitude,
+                        DeliveryLatitude = factory?.Latitude,
+                        DeliveryLongitude = factory?.Longitude,
+                        EstimatedDistanceKm = distance,
+                        TransportFee = fee,
+                        Status = TransportStatus.PENDING, // Trạng thái PENDING để xuất hiện trên chợ đơn
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _db.TransportJobs.Add(transport);
+                }
+            }
+        }
+
         await _db.SaveChangesAsync();
 
-        return Ok(new { message = "Đã cập nhật phương thức vận chuyển" });
+        return Ok(new { message = "Đã cập nhật phương thức vận chuyển và tạo đơn vận chuyển thành công" });
     }
 
     public class SetTransportDto

@@ -12,11 +12,56 @@ public static class DataSeeder
         // ── 0. Đảm bảo các giá trị enum tồn tại trong PostgreSQL ────────────────
         await EnsureEnumValuesAsync(db);
 
+        // Reset/clean up previous seeded data to ensure fresh seeding with pending jobs
+        var oldEmails = new[] { "giango9981@gmail.com", "factory@renats.vn", "depot1@renats.vn", "depot2@renats.vn", "depot3@renats.vn", "driver@renats.vn" };
+        var oldUsers = await db.Users.Where(u => oldEmails.Contains(u.Email)).ToListAsync();
+        if (oldUsers.Any())
+        {
+            db.WeightVerifications.RemoveRange(db.WeightVerifications);
+            db.WeightTickets.RemoveRange(db.WeightTickets);
+            db.Invoices.RemoveRange(db.Invoices);
+            db.TransportTrackingLogs.RemoveRange(db.TransportTrackingLogs);
+            db.TransportJobs.RemoveRange(db.TransportJobs);
+            db.BatchBids.RemoveRange(db.BatchBids);
+            db.BatchOrders.RemoveRange(db.BatchOrders);
+            db.BatchImages.RemoveRange(db.BatchImages);
+            db.InventoryBatches.RemoveRange(db.InventoryBatches);
+            db.PickupResults.RemoveRange(db.PickupResults);
+            db.PickupRequestImages.RemoveRange(db.PickupRequestImages);
+            db.PickupRequestItems.RemoveRange(db.PickupRequestItems);
+            db.PickupRequests.RemoveRange(db.PickupRequests);
+            db.Sellers.RemoveRange(db.Sellers);
+            db.Factories.RemoveRange(db.Factories);
+            db.Depots.RemoveRange(db.Depots);
+            db.Drivers.RemoveRange(db.Drivers);
+            db.Notifications.RemoveRange(db.Notifications);
+            db.Users.RemoveRange(oldUsers);
+            await db.SaveChangesAsync();
+            Console.WriteLine("🧹 [Seeder] Đã dọn dẹp dữ liệu mẫu cũ để chuẩn bị seed mới.");
+        }
+
         // ── 1. Seed Seller ──────────────────────────────────────────────────────
         await SeedSellerAsync(db);
 
         // ── 2. Seed Factory + Depots + Batches ─────────────────────────────────
         await SeedFactoryAndDepotsAsync(db);
+
+        // ── Hashing previously seeded users' passwords if they are raw or wrong
+        var seededEmails = new[] { "giango9981@gmail.com", "factory@renats.vn", "depot1@renats.vn", "depot2@renats.vn", "depot3@renats.vn", "driver@renats.vn" };
+        var usersToFix = await db.Users.Where(u => seededEmails.Contains(u.Email)).ToListAsync();
+        foreach (var u in usersToFix)
+        {
+            if (!u.PasswordHash.StartsWith("$2"))
+            {
+                u.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Renats@2025");
+                db.Entry(u).State = EntityState.Modified;
+            }
+        }
+        if (db.ChangeTracker.HasChanges())
+        {
+            await db.SaveChangesAsync();
+            Console.WriteLine("✅ [Seeder] Đã BCrypt-hash lại tất cả tài khoản mẫu.");
+        }
     }
 
     // ── 0. Thêm enum values vào PostgreSQL enum type ─────────────────────────────
@@ -490,7 +535,45 @@ public static class DataSeeder
         db.TransportJobs.Add(activeTransport);
         await db.SaveChangesAsync();
 
-        Console.WriteLine("✅ [Seeder] Đã seed Factory, 3 Depots, 5 InventoryBatches.");
+        // ─── Pending Order & Transport Job (chưa gán tài xế để hiển thị trên chợ đơn) ───
+        var listedBatch2 = batches.First(b => b.BatchCode == "BATCH-2602");
+        listedBatch2.Status = BatchStatus.ACCEPTED;
+        listedBatch2.AcceptedAt = DateTime.UtcNow.AddHours(-1);
+        listedBatch2.UpdatedAt = DateTime.UtcNow;
+
+        var pendingOrder = new BatchOrder
+        {
+            Id = Guid.NewGuid(),
+            BatchId = listedBatch2.Id,
+            FactoryId = factoryId,
+            AgreedPrice = listedBatch2.UnitPrice ?? 15000m,
+            TotalAmount = listedBatch2.EstimatedWeightKg * (listedBatch2.UnitPrice ?? 15000m),
+            Status = BatchStatus.ACCEPTED,
+            CreatedAt = DateTime.UtcNow.AddHours(-1)
+        };
+        db.BatchOrders.Add(pendingOrder);
+        await db.SaveChangesAsync();
+
+        var pendingTransport = new TransportJob
+        {
+            Id = Guid.NewGuid(),
+            BatchOrderId = pendingOrder.Id,
+            DriverId = null, // Chưa có tài xế nhận
+            PickupAddress = depot2.Address ?? "Kho Re-Nats",
+            DeliveryAddress = factory.Address ?? "Nhà máy tái chế",
+            PickupLatitude = depot2.Latitude,
+            PickupLongitude = depot2.Longitude,
+            DeliveryLatitude = factory.Latitude,
+            DeliveryLongitude = factory.Longitude,
+            EstimatedDistanceKm = 12.5m,
+            TransportFee = 320000m,
+            Status = TransportStatus.PENDING, // PENDING để xuất hiện trên chợ đơn
+            CreatedAt = DateTime.UtcNow.AddHours(-1)
+        };
+        db.TransportJobs.Add(pendingTransport);
+        await db.SaveChangesAsync();
+
+        Console.WriteLine("✅ [Seeder] Đã seed Factory, 3 Depots, 5 InventoryBatches cùng 1 đơn hàng PENDING cho vận tải.");
         Console.WriteLine("   📧 factory@renats.vn  |  🔑 Renats@2025");
         Console.WriteLine("   📧 depot1@renats.vn   |  🔑 Renats@2025");
         Console.WriteLine("   📧 driver@renats.vn   |  🔑 Renats@2025");

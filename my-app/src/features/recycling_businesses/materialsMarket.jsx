@@ -24,58 +24,8 @@ const MaterialsMarket = () => {
                 setPremiumInfo(premiumRes);
             } catch (err) {
                 console.error('Error fetching market data:', err);
-                toast.error('Không thể kết nối máy chủ. Đang hiển thị dữ liệu mô phỏng!');
-                // Fallback mock data if server is down or database empty
-                setBatches([
-                    {
-                        id: '00000000-0000-0000-0000-000000000101',
-                        batchCode: 'BATCH-8821',
-                        materialType: 'CARDBOARD',
-                        estimatedWeightKg: 12500,
-                        unitPrice: 3200,
-                        moisturePercentage: 11.5,
-                        purityPercentage: 98.0,
-                        description: 'Giấy carton hỗn hợp ép kiện chất lượng cao, độ ẩm thấp, sạch tạp chất.',
-                        thumbnailImageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAtQo_BXLTCb7oQmjrGu166gQf9vcKoMtG_l_vj0srHle8_RiRGoVAD3an26lfGqWsNUxx2K3CiVIqs8GCKXlorB5u380ylN_YH34MZDNqffezCHv2sS-2Bya07Wq6nlhdO_d68qoJG7YW53ctPoD-KT2AqZjmyiWNH1NWMqaM6P380hKnHvhyYTbSyFyBNCuZBSnuR_Xc0BH23J8N4zvVHs9SnSZ1HuNzTpmbB1QD-hRkkbwrflSXjqRYZser0-Jcdb-PIgDBoEcU',
-                        depot: {
-                            companyName: 'Vựa Phế Liệu Minh Khôi',
-                            city: 'Quận 9, TP.HCM',
-                            reputationScore: 98,
-                        }
-                    },
-                    {
-                        id: '00000000-0000-0000-0000-000000000102',
-                        batchCode: 'BATCH-8822',
-                        materialType: 'HDPE',
-                        estimatedWeightKg: 8400,
-                        unitPrice: 15000,
-                        moisturePercentage: 1.2,
-                        purityPercentage: 95.0,
-                        description: 'Nhựa HDPE ép kiện chuyên dụng cho tái chế, đã phân loại kỹ.',
-                        thumbnailImageUrl: '',
-                        depot: {
-                            companyName: 'Đại Lý Thu Gom Thành Đạt',
-                            city: 'Thủ Đức, TP.HCM',
-                            reputationScore: 75,
-                        }
-                    },
-                    {
-                        id: '00000000-0000-0000-0000-000000000103',
-                        batchCode: 'BATCH-8823',
-                        materialType: 'IRON',
-                        estimatedWeightKg: 45000,
-                        unitPrice: 12000,
-                        moisturePercentage: 0.5,
-                        purityPercentage: 92.0,
-                        description: 'Sắt vụn, sắt xà gồ tháo dỡ công trình, không dính bê tông.',
-                        thumbnailImageUrl: '',
-                        depot: {
-                            companyName: 'Công Ty Môi Trường Xanh',
-                            city: 'Bình Thạnh, TP.HCM',
-                            reputationScore: 92,
-                        }
-                    }
-                ]);
+                toast.error('Không thể kết nối máy chủ để tải danh sách lô hàng!');
+                setBatches([]);
             } finally {
                 setLoading(false);
             }
