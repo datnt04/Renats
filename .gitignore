@@ -1,0 +1,136 @@
+# ─────────────────────────────────────────────
+#  Re-Nats Monorepo .gitignore
+#  Frontend: React + Vite + TailwindCSS
+#  Backend:  ASP.NET Core (.NET 8) + EF Core
+# ─────────────────────────────────────────────
+
+# ══════════════════════════════════════════════
+#  VISUAL STUDIO / VISUAL STUDIO CODE
+# ══════════════════════════════════════════════
+
+# VS hidden folder (gây lỗi "Permission denied" khi git đọc file lock)
+.vs/
+
+# VS Code settings (không cần push lên)
+.vscode/
+
+# ══════════════════════════════════════════════
+#  ASP.NET CORE / .NET BACKEND (Renats_BE/)
+# ══════════════════════════════════════════════
+
+# Build output
+**/bin/
+**/obj/
+
+# NuGet packages (restore bằng dotnet restore)
+*.nupkg
+*.nuspec
+**/packages/
+!**/packages/build/
+
+# User-specific settings
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# Publish profiles
+**/Properties/PublishProfiles/
+
+# Entity Framework migrations lock (không nên bỏ qua Migrations/ - cần track)
+# Nhưng bỏ qua snapshot snapshot nếu bị conflict:
+# **/Migrations/*ModelSnapshot.cs  ← KHÔNG bỏ, cần thiết cho EF
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# ══════════════════════════════════════════════
+#  REACT + VITE FRONTEND (my-app/)
+# ══════════════════════════════════════════════
+
+# Node modules (cài lại bằng npm install)
+**/node_modules/
+
+# Vite build output
+**/dist/
+**/dist-ssr/
+
+# Environment variables (QUAN TRỌNG: chứa secrets)
+**/.env
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+**/.env.production
+
+# Vite cache
+**/.vite/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# ══════════════════════════════════════════════
+#  HỆ ĐIỀU HÀNH
+# ══════════════════════════════════════════════
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux
+*~
+
+# ══════════════════════════════════════════════
+#  LOGS & TẠM THỜI
+# ══════════════════════════════════════════════
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+logs/
+*.tmp
+*.temp
+*.cache
+
+# ══════════════════════════════════════════════
+#  SECRETS & CERTIFICATES (RẤT QUAN TRỌNG)
+# ══════════════════════════════════════════════
+
+# KHÔNG BAO GIỜ push lên git:
+*.pfx
+*.pem
+*.key
+*.p12
+
+# appsettings.json → KHÔNG commit lên git, mỗi người giữ file riêng của mình.
+# Dùng: git rm --cached để untrack nếu đã lỡ commit trước đó.
+appsettings.json
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+
+
+# ══════════════════════════════════════════════
+#  UPLOAD FILES
+# ══════════════════════════════════════════════
+
+**/uploads/
+**/wwwroot/uploads/

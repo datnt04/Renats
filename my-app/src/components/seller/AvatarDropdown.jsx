@@ -1,15 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../app/AuthContext';
+import { ROLE_HOME } from '../../app/roleRoutes';
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 const IconUser = ({ cls = 'w-5 h-5' }) => (
     <svg className={cls} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-    </svg>
-);
-const IconLock = ({ cls = 'w-5 h-5' }) => (
-    <svg className={cls} fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
     </svg>
 );
 const IconBell = ({ cls = 'w-5 h-5' }) => (
@@ -33,17 +30,51 @@ const IconChevron = ({ cls = 'w-4 h-4' }) => (
     </svg>
 );
 
-// ── Avatar Dropdown (exported for reuse) ───────────────────────────────────
-export const AvatarDropdown = ({ name = 'Nguyễn Văn A', role = 'Người bán' }) => {
+// ── Mapping role → trang hồ sơ riêng ─────────────────────────────────────────
+// Nếu chưa có trang profile riêng thì fallback về dashboard của role đó
+const ROLE_PROFILE = {
+    SELLER:  '/seller/ho-so',
+    DEPOT:   '/kho/dashboard',    // TODO: thay bằng /kho/ho-so khi có trang
+    FACTORY: '/recycle/dashboard',
+    DRIVER:  '/transport/market',
+    ADMIN:   '/admin/dashboard',
+};
+
+// ── Tên hiển thị vai trò ──────────────────────────────────────────────────────
+const ROLE_LABEL = {
+    SELLER:  'Người bán',
+    DEPOT:   'Điểm thu gom',
+    FACTORY: 'Nhà máy tái chế',
+    DRIVER:  'Tài xế',
+    ADMIN:   'Quản trị viên',
+};
+
+// ── Avatar Dropdown ────────────────────────────────────────────────────────────
+// Tất cả link điều hướng đều dựa theo role thực tế, KHÔNG hardcode route seller
+export const AvatarDropdown = () => {
     const [open, setOpen] = useState(false);
-    const navigate = useNavigate();
+    const navigate        = useNavigate();
+    const { user, logout } = useAuth();
+
+    const displayName = user?.fullName || user?.email || 'Người dùng';
+    const displayRole = ROLE_LABEL[user?.role] || 'Thành viên';
+
+    // Dashboard và profile đúng theo role
+    const dashboardLink = ROLE_HOME[user?.role] || '/';
+    const profileLink   = ROLE_PROFILE[user?.role] || dashboardLink;
+
+    const handleLogout = () => {
+        setOpen(false);
+        logout();
+        navigate('/dang-nhap', { replace: true });
+    };
 
     const menuItems = [
-        { icon: <IconUser />, label: 'Hồ sơ cá nhân', to: '/seller/ho-so' },
-        { icon: <IconGrid />, label: 'Dashboard', to: '/seller/dashboard' },
-        { icon: <IconBell />, label: 'Thông báo', to: '#' },
+        { icon: <IconUser />, label: 'Hồ sơ cá nhân', to: profileLink   },
+        { icon: <IconGrid />, label: 'Trang chủ',      to: dashboardLink },
+        { icon: <IconBell />, label: 'Thông báo',      to: '#'           },
         { divider: true },
-        { icon: <IconLogout />, label: 'Đăng xuất', action: () => navigate('/'), danger: true },
+        { icon: <IconLogout />, label: 'Đăng xuất', action: handleLogout, danger: true },
     ];
 
     return (
@@ -53,44 +84,39 @@ export const AvatarDropdown = ({ name = 'Nguyễn Văn A', role = 'Người bán
                 className="flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-xl hover:bg-slate-100 transition-colors focus:outline-none"
             >
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-700 flex items-center justify-center text-white font-bold text-sm select-none">
-                    {name.charAt(0)}
+                    {displayName.charAt(0).toUpperCase()}
                 </div>
                 <div className="hidden sm:block text-left">
-                    <p className="text-sm font-bold text-slate-800 leading-none">{name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{role}</p>
+                    <p className="text-sm font-bold text-slate-800 leading-none">{displayName}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{displayRole}</p>
                 </div>
                 <span className={`text-slate-400 hidden sm:block transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
                     <IconChevron />
                 </span>
             </button>
 
-            {/* Dropdown */}
             {open && (
                 <>
-                    {/* Backdrop */}
                     <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-                    {/* Panel */}
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-fade-in">
-                        {/* User info header */}
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50">
+                        {/* Header */}
                         <div className="px-4 py-3.5 border-b border-slate-100 bg-slate-50">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-700 flex items-center justify-center text-white font-extrabold">
-                                    {name.charAt(0)}
+                                    {displayName.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                    <p className="text-sm font-bold text-slate-800">{name}</p>
-                                    <p className="text-xs text-slate-400">{role}</p>
+                                    <p className="text-sm font-bold text-slate-800">{displayName}</p>
+                                    <p className="text-xs text-slate-400">{displayRole}</p>
                                 </div>
                             </div>
                         </div>
-                        {/* Menu items */}
+                        {/* Menu */}
                         <div className="py-1.5">
                             {menuItems.map((item, i) => {
                                 if (item.divider) return <div key={i} className="my-1.5 border-t border-slate-100" />;
                                 const cls = `w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors text-left
-                                    ${item.danger
-                                        ? 'text-red-500 hover:bg-red-50'
-                                        : 'text-slate-700 hover:bg-slate-50'}`;
+                                    ${item.danger ? 'text-red-500 hover:bg-red-50' : 'text-slate-700 hover:bg-slate-50'}`;
                                 if (item.to && item.to !== '#') {
                                     return (
                                         <Link key={i} to={item.to} onClick={() => setOpen(false)} className={cls}>
@@ -100,7 +126,7 @@ export const AvatarDropdown = ({ name = 'Nguyễn Văn A', role = 'Người bán
                                     );
                                 }
                                 return (
-                                    <button key={i} onClick={() => { setOpen(false); item.action?.(); }} className={cls}>
+                                    <button key={i} onClick={() => { item.action?.(); }} className={cls}>
                                         <span className={item.danger ? 'text-red-400' : 'text-slate-400'}>{item.icon}</span>
                                         {item.label}
                                     </button>

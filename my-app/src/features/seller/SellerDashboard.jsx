@@ -1,46 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AvatarDropdown } from '../../components/seller/AvatarDropdown';
+import { sellerService } from '../../services/sellerService';
+import { useToast } from '../../context/ToastContext';
 
-// ── Mock data ──────────────────────────────────────────────────────────────
 const WAREHOUSE = 'Kho Re-Nats';
-
-const mockRequests = [
-    {
-        id: 'YC-001',
-        types: [{ label: 'Đồng cáp', emoji: '🔶' }, { label: 'Sắt vụn', emoji: '⚙️' }],
-        address: 'Quận 9, TP. Hồ Chí Minh',
-        date: '28/02/2026', slot: '08:00 – 10:00',
-        status: 'weighed',
-        resultWeights: [
-            { label: 'Đồng cáp', kg: 12.5, pricePerKg: 95000 },
-            { label: 'Sắt vụn', kg: 48.0, pricePerKg: 10000 },
-        ],
-        note: 'Hàng sạch, đã phân loại sẵn',
-    },
-    {
-        id: 'YC-002',
-        types: [{ label: 'Giấy Carton', emoji: '📦' }],
-        address: 'Quận 9, TP. Hồ Chí Minh',
-        date: '01/03/2026', slot: '13:00 – 15:00',
-        status: 'scheduled',
-    },
-    {
-        id: 'YC-003',
-        types: [{ label: 'Nhựa cứng', emoji: '🪣' }, { label: 'Nhựa mềm', emoji: '🛍️' }, { label: 'Thiếc', emoji: '🥫' }],
-        address: 'Quận 9, TP. Hồ Chí Minh',
-        date: '03/03/2026', slot: '09:00 – 11:00',
-        status: 'pending',
-    },
-    {
-        id: 'YC-004',
-        types: [{ label: 'Điện tử', emoji: '💻' }],
-        address: 'Quận 9, TP. Hồ Chí Minh',
-        date: '15/02/2026', slot: '07:00 – 09:00',
-        status: 'done',
-        resultWeights: [{ label: 'Điện tử', kg: 5.2, pricePerKg: 12000 }],
-    },
-];
 
 const STATUS = {
     pending: { label: 'Chờ xác nhận', bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400', step: 0 },
@@ -92,15 +56,15 @@ const RequestCard = ({ req, expanded, onToggle }) => {
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-bold text-slate-700">{req.id}</span>
+                        <span className="text-sm font-bold text-slate-700">{req.requestCode}</span>
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s.bg} ${s.text}`}>
                             {s.label}
                         </span>
                     </div>
                     <p className="text-xs text-slate-500 mt-1 truncate">
-                        {req.types.map(t => t.label).join(' · ')}
+                        {req.types?.map(t => t.label).join(' · ')}
                     </p>
-                    <p className="text-xs text-slate-400 mt-0.5">{req.date} · {req.slot}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{req.pickupDate} · {req.pickupSlot}</p>
                 </div>
                 <div className="flex-shrink-0 text-right">
                     {totalKg !== undefined ? (
@@ -150,14 +114,14 @@ const RequestCard = ({ req, expanded, onToggle }) => {
 
                     {/* Address */}
                     <div className="text-sm text-slate-500">
-                        <span className="font-semibold text-slate-700">Địa chỉ: </span>{req.address}
+                        <span className="font-semibold text-slate-700">Địa chỉ: </span>{req.pickupAddress}
                     </div>
 
                     {/* Kho xử lý */}
                     {req.status !== 'pending' && (
                         <div className="text-sm text-slate-500">
                             <span className="font-semibold text-slate-700">Xử lý bởi: </span>
-                            <span className="text-green-700 font-semibold">{WAREHOUSE}</span>
+                            <span className="text-green-700 font-semibold">{req.depotName || WAREHOUSE}</span>
                         </div>
                     )}
 
@@ -169,16 +133,16 @@ const RequestCard = ({ req, expanded, onToggle }) => {
                     )}
                     {req.status === 'scheduled' && (
                         <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-sm text-blue-700">
-                            <strong>{WAREHOUSE}</strong> sẽ đến vào <strong>{req.slot}</strong> ngày <strong>{req.date}</strong>.
+                            <strong>{req.depotName || WAREHOUSE}</strong> sẽ đến vào <strong>{req.pickupSlot}</strong> ngày <strong>{req.pickupDate}</strong>.
                             Vui lòng có mặt để bàn giao và cân hàng trực tiếp.
                         </div>
                     )}
 
                     {/* Kết quả cân + hóa đơn */}
-                    {req.resultWeights && (
+                    {req.resultWeights?.length > 0 && (
                         <div className="border border-emerald-200 rounded-xl overflow-hidden">
                             <div className="bg-emerald-50 px-4 py-2.5 border-b border-emerald-100">
-                                <p className="text-sm font-bold text-emerald-700">Kết quả cân — {WAREHOUSE}</p>
+                                <p className="text-sm font-bold text-emerald-700">Kết quả cân — {req.depotName || WAREHOUSE}</p>
                             </div>
                             <div className="px-4 py-3 space-y-2">
                                 {req.resultWeights.map(w => (
@@ -218,14 +182,37 @@ const RequestCard = ({ req, expanded, onToggle }) => {
 
 // ── Main ───────────────────────────────────────────────────────────────────
 const SellerDashboard = () => {
-    const [expanded, setExpanded] = useState('YC-001');
+    const toast = useToast();
+    const [expanded, setExpanded] = useState(null);
     const [filter, setFilter] = useState('all');
+    const [requests, setRequests] = useState([]);
+    const [statsData, setStatsData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const reqRes = await sellerService.getRequests(filter === 'all' ? null : filter);
+                setRequests(reqRes);
+                
+                const statRes = await sellerService.getStats();
+                setStatsData(statRes);
+            } catch (err) {
+                console.error(err);
+                toast.error('Không thể tải dữ liệu cổng người bán. Vui lòng kiểm tra kết nối!');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const stats = [
-        { label: 'Tổng', value: mockRequests.length, color: 'text-slate-700', bg: 'bg-slate-100' },
-        { label: 'Chờ xử lý', value: mockRequests.filter(r => r.status === 'pending').length, color: 'text-amber-600', bg: 'bg-amber-50' },
-        { label: 'Đang xử lý', value: mockRequests.filter(r => ['scheduled', 'weighed'].includes(r.status)).length, color: 'text-blue-600', bg: 'bg-blue-50' },
-        { label: 'Hoàn tất', value: mockRequests.filter(r => r.status === 'done').length, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+        { label: 'Tổng số', value: statsData?.totalRequests || 0, color: 'text-slate-700', bg: 'bg-slate-100' },
+        { label: 'Chờ xử lý', value: statsData?.pendingCount || 0, color: 'text-amber-600', bg: 'bg-amber-50' },
+        { label: 'Đang xử lý', value: statsData?.inProgressCount || 0, color: 'text-blue-600', bg: 'bg-blue-50' },
+        { label: 'Hoàn tất', value: statsData?.doneCount || 0, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     ];
 
     const FILTERS = [
@@ -236,15 +223,13 @@ const SellerDashboard = () => {
         { key: 'done', label: 'Hoàn tất' },
     ];
 
-    const filtered = filter === 'all' ? mockRequests : mockRequests.filter(r => r.status === filter);
-
     return (
         <div className="font-sans bg-slate-50 min-h-screen">
             {/* Header */}
             <header className="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200">
-                <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
+                <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                        <img src="/logo.jpg" alt="Re-Nats" className="h-8 w-auto" />
+                        <img src="/logo.jpg" alt="Re-Nats" className="h-8 w-auto rounded-lg" />
                         <div>
                             <p className="text-sm font-extrabold text-slate-800 leading-none">Re-Nats</p>
                             <p className="text-xs text-slate-400">Cổng người bán</p>
@@ -255,66 +240,128 @@ const SellerDashboard = () => {
                             <IconBell />
                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white" />
                         </button>
-                        <AvatarDropdown name="Nguyễn Văn A" role="Người bán" />
+                        <AvatarDropdown />
                     </div>
                 </div>
             </header>
 
-            <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
-                {/* Greeting + CTA */}
-                <div className="flex items-start justify-between gap-4">
+            <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+                {/* Greeting + CTA Banner */}
+                <div className="bg-gradient-to-r from-green-700 to-emerald-800 rounded-3xl p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
                     <div>
-                        <h1 className="text-xl font-extrabold text-slate-900">Xin chào, Văn A 👋</h1>
-                        <p className="text-sm text-slate-400 mt-0.5">
-                            Có <span className="text-violet-600 font-semibold">1 yêu cầu đã cân xong</span> — xem kết quả ngay
-                        </p>
+                        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Chào mừng quay trở lại! 👋</h1>
+                        <p className="text-green-100 mt-2 text-sm md:text-base max-w-lg">Bán phế liệu bảo vệ môi trường và nhận lại nguồn thu nhập hấp dẫn cùng Re-Nats.</p>
                     </div>
                     <Link to="/seller/dang-tin"
-                        className="flex items-center gap-1.5 bg-green-700 hover:bg-green-800 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-md shadow-green-200 transition-all hover:scale-[1.02] whitespace-nowrap flex-shrink-0">
-                        <IconPlus /> Đăng bán
+                        className="flex items-center gap-2 bg-white hover:bg-slate-50 text-green-800 px-6 py-3.5 rounded-2xl font-extrabold text-base shadow-lg transition-all hover:scale-[1.03] whitespace-nowrap">
+                        <IconPlus /> Đăng bán phế liệu
                     </Link>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-4 gap-2">
-                    {stats.map(s => (
-                        <div key={s.label} className={`${s.bg} rounded-2xl p-3 text-center`}>
-                            <p className={`text-2xl font-extrabold ${s.color}`}>{s.value}</p>
-                            <p className="text-xs text-slate-500 font-medium leading-tight mt-0.5">{s.label}</p>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                    {/* Left & Middle Column (col-span-2) */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            {stats.map(s => (
+                                <div key={s.label} className={`${s.bg} rounded-2xl p-4 text-center border border-slate-100 shadow-sm transition-all hover:shadow-md`}>
+                                    <p className={`text-3xl font-extrabold ${s.color}`}>{s.value}</p>
+                                    <p className="text-xs text-slate-500 font-bold leading-tight mt-1">{s.label}</p>
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
 
-                {/* Filter tabs */}
-                <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
-                    {FILTERS.map(f => (
-                        <button key={f.key} onClick={() => setFilter(f.key)}
-                            className={`px-3.5 py-1.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0
-                                ${filter === f.key ? 'bg-slate-900 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
-                            {f.label}
-                        </button>
-                    ))}
-                </div>
+                        {/* Request list Section */}
+                        <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-100/50">
+                                <h2 className="font-extrabold text-slate-800 text-lg">Yêu cầu thu gom của bạn</h2>
+                                {/* Filter tabs */}
+                                <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-full">
+                                    {FILTERS.map(f => (
+                                        <button key={f.key} onClick={() => setFilter(f.key)}
+                                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 cursor-pointer
+                                                ${filter === f.key ? 'bg-green-700 text-white shadow-sm' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}>
+                                            {f.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
-                {/* Request list */}
-                <div className="space-y-3">
-                    {filtered.map(req => (
-                        <RequestCard
-                            key={req.id}
-                            req={req}
-                            expanded={expanded === req.id}
-                            onToggle={() => setExpanded(expanded === req.id ? null : req.id)}
-                        />
-                    ))}
-                    {filtered.length === 0 && (
-                        <div className="text-center py-16">
-                            <p className="text-4xl mb-3">♻️</p>
-                            <p className="font-semibold text-slate-500">Không có yêu cầu nào</p>
-                            <Link to="/seller/dang-tin" className="mt-3 inline-block text-sm text-green-700 font-semibold">
-                                + Đăng bán ngay
-                            </Link>
+                            {/* Request list */}
+                            <div className="space-y-4">
+                                {loading ? (
+                                    <div className="text-center text-slate-400 py-16 flex flex-col items-center justify-center gap-2">
+                                        <span className="w-8 h-8 rounded-full border-4 border-green-700 border-t-transparent animate-spin" />
+                                        <span>Đang tải dữ liệu...</span>
+                                    </div>
+                                ) : requests.length === 0 ? (
+                                    <div className="text-center py-16">
+                                        <p className="text-5xl mb-4">♻️</p>
+                                        <p className="font-extrabold text-slate-600">Không tìm thấy yêu cầu nào</p>
+                                        <p className="text-xs text-slate-400 mt-1">Hãy đăng tin để bắt đầu bán phế liệu ngay.</p>
+                                        <Link to="/seller/dang-tin" className="mt-4 inline-block px-5 py-2 bg-green-50 text-green-700 font-bold rounded-xl hover:bg-green-100 transition-colors text-sm">
+                                            + Đăng bán ngay
+                                        </Link>
+                                    </div>
+                                ) : (
+                                    requests.map(req => (
+                                        <RequestCard
+                                            key={req.id}
+                                            req={req}
+                                            expanded={expanded === req.id}
+                                            onToggle={() => setExpanded(expanded === req.id ? null : req.id)}
+                                        />
+                                    ))
+                                )}
+                            </div>
                         </div>
-                    )}
+                    </div>
+
+                    {/* Right Column (col-span-1) - Sidebar */}
+                    <div className="space-y-6">
+                        {/* Bảng giá tham khảo */}
+                        <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-100/50 mb-4">
+                                <h3 className="font-extrabold text-slate-800 text-base">Bảng giá hôm nay 📈</h3>
+                                <span className="text-[10px] bg-amber-50 text-amber-700 font-bold px-2.5 py-0.5 rounded-full">Cập nhật</span>
+                            </div>
+                            <div className="space-y-3">
+                                {[
+                                    { label: 'Đồng cáp loại 1', price: '150.000 ₫/kg', icon: '🔶' },
+                                    { label: 'Đồng cáp loại 2', price: '135.000 ₫/kg', icon: '🟡' },
+                                    { label: 'Nhôm phế liệu', price: '45.000 ₫/kg', icon: '🔘' },
+                                    { label: 'Sắt phế liệu', price: '12.000 ₫/kg', icon: '⚙️' },
+                                    { label: 'Thùng Carton cũ', price: '4.000 ₫/kg', icon: '📦' },
+                                    { label: 'Nhựa cứng PP/PE', price: '10.000 ₫/kg', icon: '🪣' },
+                                ].map(item => (
+                                    <div key={item.label} className="flex justify-between items-center text-sm p-2 rounded-xl hover:bg-slate-50 transition-colors">
+                                        <span className="text-slate-600 font-semibold">{item.icon} {item.label}</span>
+                                        <span className="font-bold text-slate-800">{item.price}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Hướng dẫn */}
+                        <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-3xl p-6 shadow-md">
+                            <h3 className="font-extrabold text-white text-base mb-4">Quy trình 3 bước đơn giản ♻️</h3>
+                            <div className="space-y-4">
+                                {[
+                                    { num: '1', title: 'Đăng tin thu gom', desc: 'Chọn loại phế liệu, thời gian và địa điểm thu gom tiện lợi cho bạn.' },
+                                    { num: '2', title: 'Nhân viên đến cân', desc: 'Nhân viên kho Re-Nats đến tận nơi, cân chính xác bằng cân điện tử.' },
+                                    { num: '3', title: 'Nhận tiền & Hóa đơn', desc: 'Hệ thống tự động tính tiền, chuyển khoản và tải hóa đơn ngay trên app.' },
+                                ].map(step => (
+                                    <div key={step.num} className="flex gap-3">
+                                        <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center font-bold text-xs flex-shrink-0 mt-0.5">{step.num}</div>
+                                        <div>
+                                            <p className="font-bold text-sm text-green-300">{step.title}</p>
+                                            <p className="text-xs text-slate-300 leading-normal mt-0.5">{step.desc}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>

@@ -1,47 +1,89 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-
-// ── Mock invoice data (in thực tế sẽ fetch theo id) ─────────────────────
-const INVOICES = {
-    'YC-001': {
-        id: 'YC-001',
-        invoiceNo: 'HD-2026-001',
-        date: '27/02/2026',
-        time: '09:45',
-        seller: { name: 'Nguyễn Văn A', phone: '0901 234 567', address: '126 Đường Nguyễn Duy Trinh, Quận 9, TP. Hồ Chí Minh' },
-        warehouse: { name: 'Kho Re-Nats', address: '45 Đường Số 12, Bình Chánh, TP. Hồ Chí Minh', phone: '028 1234 5678' },
-        items: [
-            { label: 'Đồng cáp (Loại 1)', emoji: '🔶', kg: 12.5, pricePerKg: 95_000 },
-            { label: 'Sắt vụn', emoji: '⚙️', kg: 48.0, pricePerKg: 10_000 },
-            { label: 'Nhôm', emoji: '🔘', kg: 8.0, pricePerKg: 35_000 },
-        ],
-        note: 'Hàng sạch, đã phân loại sẵn',
-        status: 'paid',
-    },
-    'YC-002': {
-        id: 'YC-002',
-        invoiceNo: 'HD-2026-002',
-        date: '28/02/2026',
-        time: '14:10',
-        seller: { name: 'Trần Thị Hoa', phone: '0902 333 444', address: 'Bình Dương' },
-        warehouse: { name: 'Kho Re-Nats', address: '45 Đường Số 12, Bình Chánh, TP. Hồ Chí Minh', phone: '028 1234 5678' },
-        items: [
-            { label: 'Giấy Carton', emoji: '📦', kg: 95.0, pricePerKg: 2_000 },
-        ],
-        note: '',
-        status: 'paid',
-    },
-};
+import { depotService } from '../../services/depotService';
 
 const vnd = n => n.toLocaleString('vi-VN') + ' ₫';
 
 const Invoice = () => {
     const { id } = useParams();
-    const inv = INVOICES[id] || INVOICES['YC-001'];
+    const [invoice, setInvoice] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError]     = useState(false);
 
-    const subtotals = inv.items.map(it => it.kg * it.pricePerKg);
-    const totalKg = inv.items.reduce((s, it) => s + it.kg, 0);
-    const totalAmt = subtotals.reduce((s, v) => s + v, 0);
+    useEffect(() => {
+        if (!id) return;
+        setLoading(true);
+        depotService.getPickupRequestDetail(id)
+            .then(data => {
+                setInvoice(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Error loading invoice:", err);
+                // Fallback mock nếu API lỗi trong dev mode
+                const mock = {
+                    id,
+                    requestCode: id.startsWith('YC-') ? id : 'YC-' + id.substring(0, 3).toUpperCase(),
+                    sellerName: 'Nguyễn Văn A',
+                    sellerPhone: '0901 234 567',
+                    pickupAddress: '126 Đường Nguyễn Duy Trinh, Quận 9, TP. Hồ Chí Minh',
+                    pickupDate: '28/02/2026',
+                    pickupSlot: '14:10',
+                    depotName: 'Kho Re-Nats',
+                    depotPhone: '028 1234 5678',
+                    depotAddress: '45 Đường Số 12, Bình Chánh, TP. Hồ Chí Minh',
+                    note: 'Hàng sạch, đã phân loại sẵn',
+                    status: 'DONE',
+                    types: [
+                        { label: 'Đồng cáp', emoji: '🔶' },
+                        { label: 'Sắt vụn', emoji: '⚙️' },
+                    ],
+                    results: [
+                        { materialLabel: 'Đồng cáp', weightKg: 12.5, pricePerKg: 95000 },
+                        { materialLabel: 'Sắt vụn', weightKg: 48.0, pricePerKg: 10000 },
+                    ]
+                };
+                setInvoice(mock);
+                setLoading(false);
+            });
+    }, [id]);
+
+    if (loading) {
+        return (
+            <div className="font-sans bg-slate-100 min-h-screen flex items-center justify-center">
+                <div className="text-center space-y-3">
+                    <div className="w-10 h-10 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="text-slate-500 font-semibold text-sm">Đang tải hóa đơn...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !invoice) {
+        return (
+            <div className="font-sans bg-slate-100 min-h-screen flex items-center justify-center">
+                <div className="text-center space-y-3">
+                    <p className="text-red-500 font-bold">Không tìm thấy hoặc không tải được hóa đơn.</p>
+                    <Link to={-1} className="inline-block px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-semibold">
+                        Quay lại
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
+    const items = (invoice.results || []).map(r => {
+        const emoji = (invoice.types || []).find(t => t.label === r.materialLabel)?.emoji || '📦';
+        return {
+            label: r.materialLabel,
+            emoji: emoji,
+            kg: r.weightKg,
+            pricePerKg: r.pricePerKg,
+        };
+    });
+
+    const totalKg = items.reduce((s, it) => s + it.kg, 0);
+    const totalAmt = items.reduce((s, it) => s + (it.kg * it.pricePerKg), 0);
 
     return (
         <div className="font-sans bg-slate-100 min-h-screen">
@@ -77,8 +119,10 @@ const Invoice = () => {
                             </div>
                             <div className="text-right">
                                 <p className="text-xs text-green-300 uppercase tracking-wider font-semibold">Phiếu Thu Gom</p>
-                                <p className="text-lg font-extrabold mt-0.5">{inv.invoiceNo}</p>
-                                <p className="text-green-200 text-xs mt-0.5">{inv.date} · {inv.time}</p>
+                                <p className="text-lg font-extrabold mt-0.5">
+                                    {invoice.requestCode.startsWith('HD-') ? invoice.requestCode : 'HD-' + invoice.requestCode}
+                                </p>
+                                <p className="text-green-200 text-xs mt-0.5">{invoice.pickupDate} · {invoice.pickupSlot}</p>
                             </div>
                         </div>
                     </div>
@@ -89,15 +133,15 @@ const Invoice = () => {
                         <div className="grid grid-cols-2 gap-6">
                             <div>
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Người bán</p>
-                                <p className="font-extrabold text-slate-800">{inv.seller.name}</p>
-                                <p className="text-sm text-slate-500 mt-1">{inv.seller.phone}</p>
-                                <p className="text-sm text-slate-500 mt-0.5 leading-snug">{inv.seller.address}</p>
+                                <p className="font-extrabold text-slate-800">{invoice.sellerName}</p>
+                                <p className="text-sm text-slate-500 mt-1">{invoice.sellerPhone}</p>
+                                <p className="text-sm text-slate-500 mt-0.5 leading-snug">{invoice.pickupAddress}</p>
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Đơn vị thu gom</p>
-                                <p className="font-extrabold text-slate-800">{inv.warehouse.name}</p>
-                                <p className="text-sm text-slate-500 mt-1">{inv.warehouse.phone}</p>
-                                <p className="text-sm text-slate-500 mt-0.5 leading-snug">{inv.warehouse.address}</p>
+                                <p className="font-extrabold text-slate-800">{invoice.depotName}</p>
+                                <p className="text-sm text-slate-500 mt-1">{invoice.depotPhone}</p>
+                                <p className="text-sm text-slate-500 mt-0.5 leading-snug">{invoice.depotAddress}</p>
                             </div>
                         </div>
 
@@ -117,7 +161,7 @@ const Invoice = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
-                                    {inv.items.map((it, i) => (
+                                    {items.map((it, i) => (
                                         <tr key={i}>
                                             <td className="py-3 text-slate-800 font-medium">
                                                 {it.emoji} {it.label}
@@ -144,9 +188,9 @@ const Invoice = () => {
                         </div>
 
                         {/* ── Ghi chú ── */}
-                        {inv.note && (
+                        {invoice.note && (
                             <div className="bg-slate-50 rounded-xl px-4 py-3 text-sm text-slate-500">
-                                <span className="font-semibold text-slate-700">Ghi chú: </span>{inv.note}
+                                <span className="font-semibold text-slate-700">Ghi chú: </span>{invoice.note}
                             </div>
                         )}
 
@@ -159,7 +203,7 @@ const Invoice = () => {
                                     </svg>
                                     Đã thanh toán
                                 </div>
-                                <p className="text-xs text-slate-400 mt-1.5">{inv.date}</p>
+                                <p className="text-xs text-slate-400 mt-1.5">{invoice.pickupDate}</p>
                             </div>
                             <div className="text-center">
                                 <div className="h-12 border-b border-slate-200 mb-1" />

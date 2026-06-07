@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../../components/layout/Header';
 import Footer from '../../components/layout/Footer';
 
@@ -24,12 +25,12 @@ const LandingPage = () => {
                                     Giải pháp quản lý minh bạch, hiệu quả dành riêng cho chủ vựa và doanh nghiệp tái chế. Số hóa quy trình thu gom, tối ưu lợi nhuận.
                                 </p>
                                 <div className="flex flex-col sm:flex-row gap-4">
-                                    <button className="bg-primary hover:bg-secondary text-white px-8 py-4 rounded-xl text-lg font-bold shadow-xl shadow-green-200 transition-all flex items-center justify-center">
+                                    <Link to="/dang-ky" className="bg-primary hover:bg-secondary text-white px-8 py-4 rounded-xl text-lg font-bold shadow-xl shadow-green-200 transition-all flex items-center justify-center">
                                         Dùng thử miễn phí
-                                    </button>
-                                    <button className="bg-white border-2 border-slate-200 hover:border-primary text-slate-700 px-8 py-4 rounded-xl text-lg font-bold transition-all flex items-center justify-center">
+                                    </Link>
+                                    <a href="#bang-gia" className="bg-white border-2 border-slate-200 hover:border-primary text-slate-700 px-8 py-4 rounded-xl text-lg font-bold transition-all flex items-center justify-center">
                                         Xem bảng giá hôm nay
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                             {/* Hero Visuals */}

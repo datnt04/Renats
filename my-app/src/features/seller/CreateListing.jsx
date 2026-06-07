@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { sellerService } from '../../services/sellerService';
+import { useToast } from '../../context/ToastContext';
 
 // ── Waste type catalogue ───────────────────────────────────────────────────
 const WASTE_CATALOGUE = [
@@ -177,6 +179,7 @@ const Step1 = ({ selected, setSelected, description, setDescription }) => {
 
 // ── Step 2: Địa điểm & Thời gian ──────────────────────────────────────────
 const Step2 = ({ form, setForm, images, setImages, fileRef }) => {
+    const toast = useToast();
     const set = f => e => setForm(p => ({ ...p, [f]: e.target.value }));
 
     const handleImages = (e) => {
@@ -222,11 +225,41 @@ const Step2 = ({ form, setForm, images, setImages, fileRef }) => {
                     <input type="text" placeholder="Nhập địa chỉ cụ thể..." value={form.address} onChange={set('address')}
                         className="flex-1 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600" />
                     <button
+                        type="button"
                         onClick={() => {
                             setForm(p => ({ ...p, address: 'Đang lấy vị trí...' }));
-                            navigator.geolocation?.getCurrentPosition(
-                                () => setForm(p => ({ ...p, address: 'Quận 9, TP. Hồ Chí Minh' })),
-                                () => setForm(p => ({ ...p, address: '' }))
+                            if (!navigator.geolocation) {
+                                setForm(p => ({ ...p, address: '' }));
+                                toast.error('Trình duyệt của bạn không hỗ trợ định vị.');
+                                return;
+                            }
+                            navigator.geolocation.getCurrentPosition(
+                                async (position) => {
+                                    try {
+                                        const { latitude, longitude } = position.coords;
+                                        const res = await fetch(
+                                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=vi`
+                                        );
+                                        const data = await res.json();
+                                        const address = data.display_name || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+                                        setForm(p => ({ ...p, address }));
+                                        toast.success('Đã định vị vị trí hiện tại thành công!');
+                                    } catch (err) {
+                                        console.error(err);
+                                        setForm(p => ({ ...p, address: 'Không thể giải mã tọa độ thành địa chỉ' }));
+                                        toast.error('Lỗi phân tích địa chỉ. Vui lòng tự nhập địa chỉ.');
+                                    }
+                                },
+                                (error) => {
+                                    console.error(error);
+                                    let msg = 'Lỗi định vị. Vui lòng kiểm tra quyền truy cập vị trí của trình duyệt hoặc tự nhập địa chỉ.';
+                                    if (error.code === error.PERMISSION_DENIED) {
+                                        msg = 'Quyền truy cập vị trí bị từ chối. Vui lòng cấp quyền cho trình duyệt hoặc tự nhập địa chỉ.';
+                                    }
+                                    setForm(p => ({ ...p, address: '' }));
+                                    toast.error(msg);
+                                },
+                                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
                             );
                         }}
                         className="flex items-center gap-1.5 px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm font-semibold text-slate-700 transition-colors whitespace-nowrap">
@@ -327,6 +360,7 @@ const Step3 = ({ selectedTypes, description, form, images }) => {
 
 // ── Main ───────────────────────────────────────────────────────────────────
 const CreateListing = () => {
+    const toast = useToast();
     const navigate = useNavigate();
     const fileRef = useRef();
     const [step, setStep] = useState(0);
@@ -334,6 +368,46 @@ const CreateListing = () => {
     const [description, setDescription] = useState('');
     const [images, setImages] = useState([]);
     const [form, setForm] = useState({ address: '', pickupDate: '', pickupSlot: '' });
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async () => {
+        // Validate that no images are still loading
+        const stillLoading = images.some(img => img.loading);
+        if (stillLoading) {
+            toast.error('Vui lòng đợi hình ảnh tải lên hoàn tất.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const payload = {
+                pickupAddress: form.address,
+                city: 'TP. Hồ Chí Minh',
+                note: description,
+                description: description,
+                pickupDate: form.pickupDate,
+                pickupSlot: form.pickupSlot,
+                imageUrls: images.filter(img => !img.loading).map(img => img.url),
+                items: selectedTypes.map(id => {
+                    const w = WASTE_CATALOGUE.find(x => x.id === id);
+                    return {
+                        materialId: w.id,
+                        materialLabel: w.label,
+                        materialEmoji: w.emoji
+                    };
+                })
+            };
+            
+            await sellerService.createRequest(payload);
+            toast.success('Đã gửi yêu cầu thành công! Kho thu gom sẽ liên hệ sớm.');
+            navigate('/seller/dashboard');
+        } catch (error) {
+            console.error(error);
+            toast.error('Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại!');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const canNext = () => {
         if (step === 0) return selectedTypes.length > 0;
@@ -341,13 +415,16 @@ const CreateListing = () => {
         return true;
     };
 
+    // Live preview tags
+    const previewTypes = selectedTypes.map(id => WASTE_CATALOGUE.find(x => x.id === id));
+
     return (
         <div className="font-sans bg-slate-50 min-h-screen">
             {/* Topbar */}
             <header className="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200">
-                <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+                <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
                     <button onClick={() => step === 0 ? navigate('/seller/dashboard') : setStep(s => s - 1)}
-                        className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
+                        className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer">
                         <IconBack /> {step === 0 ? 'Huỷ' : 'Quay lại'}
                     </button>
                     <span className="text-sm font-extrabold text-slate-800">Đăng bán phế liệu</span>
@@ -355,60 +432,130 @@ const CreateListing = () => {
                 </div>
             </header>
 
-            <main className="max-w-2xl mx-auto px-4 py-8">
-                <StepBar current={step} />
+            <main className="max-w-5xl mx-auto px-4 py-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                    {/* Left 2 columns: Form details */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <StepBar current={step} />
 
-                <div className="mb-6">
-                    <h1 className="text-xl font-extrabold text-slate-900">
-                        {step === 0 && 'Chọn loại phế liệu'}
-                        {step === 1 && 'Địa điểm & Thời gian'}
-                        {step === 2 && 'Xem lại & Gửi yêu cầu'}
-                    </h1>
-                    <p className="text-sm text-slate-400 mt-0.5">Bước {step + 1} / {STEPS.length}</p>
-                </div>
+                        <div className="mb-6">
+                            <h1 className="text-2xl font-extrabold text-slate-900 leading-tight">
+                                {step === 0 && 'Chọn loại phế liệu'}
+                                {step === 1 && 'Địa điểm & Thời gian'}
+                                {step === 2 && 'Xem lại & Gửi yêu cầu'}
+                            </h1>
+                            <p className="text-xs text-slate-400 font-bold mt-1">Bước {step + 1} / {STEPS.length}</p>
+                        </div>
 
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                    {step === 0 && <Step1 selected={selectedTypes} setSelected={setSelectedTypes} description={description} setDescription={setDescription} />}
-                    {step === 1 && <Step2 form={form} setForm={setForm} images={images} setImages={setImages} fileRef={fileRef} />}
-                    {step === 2 && <Step3 selectedTypes={selectedTypes} description={description} form={form} images={images} />}
-                </div>
+                        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+                            {step === 0 && <Step1 selected={selectedTypes} setSelected={setSelectedTypes} description={description} setDescription={setDescription} />}
+                            {step === 1 && <Step2 form={form} setForm={setForm} images={images} setImages={setImages} fileRef={fileRef} />}
+                            {step === 2 && <Step3 selectedTypes={selectedTypes} description={description} form={form} images={images} />}
+                        </div>
 
-                {/* Actions */}
-                <div className="mt-5 flex gap-3">
-                    {step < 2 ? (
-                        <>
-                            {step > 0 && (
-                                <button onClick={() => setStep(s => s - 1)}
-                                    className="flex-1 py-3.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors">
-                                    Quay lại
-                                </button>
+                        {/* Actions */}
+                        <div className="flex gap-3 mt-6">
+                            {step < 2 ? (
+                                <>
+                                    {step > 0 && (
+                                        <button onClick={() => setStep(s => s - 1)}
+                                            className="flex-1 py-3.5 rounded-2xl border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-50 transition-colors cursor-pointer">
+                                            Quay lại
+                                        </button>
+                                    )}
+                                    <button disabled={!canNext()} onClick={() => setStep(s => s + 1)}
+                                        className={`flex-1 py-3.5 rounded-2xl font-bold text-sm transition-all cursor-pointer ${canNext()
+                                                ? 'bg-green-700 hover:bg-green-800 text-white shadow-md shadow-green-100 hover:scale-[1.01]'
+                                                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                                            }`}>
+                                        Tiếp theo →
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="flex flex-col w-full gap-3">
+                                    <button onClick={handleSubmit} disabled={loading}
+                                        className={`w-full py-4 rounded-2xl font-extrabold text-base shadow-md transition-all cursor-pointer ${
+                                            loading ? 'bg-slate-400 text-white cursor-not-allowed' : 'bg-green-700 hover:bg-green-800 text-white shadow-green-100 hover:scale-[1.01]'
+                                        }`}>
+                                        {loading ? 'Đang gửi...' : '📤 Gửi yêu cầu đến Kho'}
+                                    </button>
+                                    <div className="flex gap-3">
+                                        <button onClick={() => setStep(1)}
+                                            className="flex-1 py-3 rounded-2xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors cursor-pointer">
+                                            ← Chỉnh sửa
+                                        </button>
+                                        <Link to="/seller/dashboard"
+                                            className="flex-1 py-3 rounded-2xl border border-red-100 text-red-400 font-semibold text-sm hover:bg-red-50 transition-colors text-center">
+                                            Huỷ
+                                        </Link>
+                                    </div>
+                                </div>
                             )}
-                            <button disabled={!canNext()} onClick={() => setStep(s => s + 1)}
-                                className={`flex-1 py-3.5 rounded-xl font-bold text-sm transition-all ${canNext()
-                                        ? 'bg-green-700 hover:bg-green-800 text-white shadow-md shadow-green-200 hover:scale-[1.01]'
-                                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                                    }`}>
-                                Tiếp theo →
-                            </button>
-                        </>
-                    ) : (
-                        <div className="flex flex-col w-full gap-3">
-                            <button onClick={() => { alert('Đã gửi yêu cầu! Kho sẽ liên hệ sớm.'); navigate('/seller/dashboard'); }}
-                                className="w-full py-4 rounded-xl bg-green-700 hover:bg-green-800 text-white font-extrabold text-base shadow-md shadow-green-200 hover:scale-[1.01] transition-all">
-                                📤 Gửi yêu cầu đến Kho
-                            </button>
-                            <div className="flex gap-3">
-                                <button onClick={() => setStep(1)}
-                                    className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50 transition-colors">
-                                    ← Chỉnh sửa
-                                </button>
-                                <Link to="/seller/dashboard"
-                                    className="flex-1 py-3 rounded-xl border border-red-100 text-red-400 font-semibold text-sm hover:bg-red-50 transition-colors text-center">
-                                    Huỷ
-                                </Link>
+                        </div>
+                    </div>
+
+                    {/* Right column: Form live preview */}
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+                            <h3 className="font-extrabold text-slate-800 text-base pb-3 border-b border-slate-100/50 mb-4">Tóm tắt đơn hàng live 📋</h3>
+                            
+                            <div className="space-y-4">
+                                {/* Types */}
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Loại phế liệu đã chọn</p>
+                                    {previewTypes.length > 0 ? (
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {previewTypes.map(w => (
+                                                <span key={w.id} className="text-xs bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-lg font-semibold text-slate-700">
+                                                    {w.emoji} {w.label}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 italic">Chưa chọn loại phế liệu nào</p>
+                                    )}
+                                </div>
+
+                                {/* Details */}
+                                <div className="space-y-2 border-t border-slate-100/50 pt-3">
+                                    <div className="flex justify-between items-center text-xs">
+                                        <span className="text-slate-400">Địa chỉ:</span>
+                                        <span className="font-semibold text-slate-700 text-right truncate w-40">{form.address || 'Chưa nhập'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-xs">
+                                        <span className="text-slate-400">Ngày lấy:</span>
+                                        <span className="font-semibold text-slate-700">{form.pickupDate || 'Chưa chọn'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-xs">
+                                        <span className="text-slate-400">Khung giờ:</span>
+                                        <span className="font-semibold text-slate-700">{form.pickupSlot || 'Chưa chọn'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-xs">
+                                        <span className="text-slate-400">Ảnh đã tải:</span>
+                                        <span className="font-semibold text-slate-700">{images.filter(x => !x.loading).length} ảnh</span>
+                                    </div>
+                                </div>
+
+                                {/* Custom description */}
+                                {description && (
+                                    <div className="border-t border-slate-100/50 pt-3">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Ghi chú của bạn</p>
+                                        <p className="text-xs text-slate-500 italic bg-slate-50 rounded-xl p-2.5 border border-slate-50">"{description}"</p>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                    )}
+
+                        {/* Safety guidelines */}
+                        <div className="bg-amber-50/50 border border-amber-100 rounded-3xl p-6">
+                            <h4 className="font-bold text-amber-800 text-sm mb-2">💡 Hướng dẫn thu gom</h4>
+                            <ul className="text-xs text-amber-700 space-y-2 list-disc pl-4">
+                                <li>Phân loại phế liệu sơ bộ sẽ giúp quá trình cân và thanh toán diễn ra nhanh hơn.</li>
+                                <li>Cân điện tử được kho mang theo và hiển thị số cân công khai, minh bạch trực tiếp.</li>
+                                <li>Sau khi đồng ý khối lượng, hệ thống sẽ thực hiện thanh toán trực tiếp.</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
