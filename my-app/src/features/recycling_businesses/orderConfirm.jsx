@@ -21,7 +21,8 @@ const OrderConfirm = () => {
             try {
                 const res = await factoryService.getBatchDetail(batchId);
                 setBatch(res);
-                setBidPrice(res.unitPrice);
+                setBidPrice(res.unitPrice || 0);
+
             } catch (err) {
                 console.error('Error fetching batch detail:', err);
                 toast.error('Không tìm thấy thông tin lô hàng từ máy chủ!');
@@ -168,7 +169,9 @@ const OrderConfirm = () => {
                                         </div>
                                         <div>
                                             <span className="text-xs text-slate-500 uppercase font-semibold">Đơn giá niêm yết</span>
-                                            <p className="text-lg font-bold text-primary">{batch.unitPrice.toLocaleString('vi-VN')} đ/kg</p>
+                                            <p className="text-lg font-bold text-primary">
+                                                {batch.unitPrice ? `${batch.unitPrice.toLocaleString('vi-VN')} đ/kg` : 'Chờ thỏa thuận'}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
