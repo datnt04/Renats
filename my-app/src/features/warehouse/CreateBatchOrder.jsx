@@ -25,6 +25,7 @@ export default function CreateBatchOrder() {
     const [depotProfile, setDepotProfile] = useState(null);
     const [showFactoryPicker, setShowFactoryPicker] = useState(false);
     const [selectedFactory, setSelectedFactory] = useState(null);
+    const [transportType, setTransportType] = useState(''); // 'RENATS_DRIVER' | 'DEPOT_SELF'
 
     const [form, setForm] = useState({
         wasteType: '',         // Loại phế liệu (tên hiển thị)
@@ -163,7 +164,7 @@ export default function CreateBatchOrder() {
                 carrierId:       form.carrierId,
                 buyer:           selectedFactory?.id || form.buyer,
                 deliveryDate:    form.deliveryDate,
-                transportType:   form.transportType,
+                transportType:   transportType || 'RENATS_DRIVER',
                 unitPrice:       parseFloat(form.unitPrice),
                 sourceRatio:     form.sourceRatio
             };
@@ -389,12 +390,27 @@ export default function CreateBatchOrder() {
                                 <div className="flex items-center justify-between mb-3">
                                     <div>
                                         <p className="font-bold text-slate-800 text-sm">Nhà máy tái chế nhận lô</p>
-                                        <p className="text-xs text-slate-400 mt-0.5">Chọn nhà máy phù hợp với loại phế liệu, gần kho bạn nhất</p>
+                                        <p className="text-xs text-slate-400 mt-0.5">
+                                            {form.materialTypeKey
+                                                ? <>Chỉ hiển thị nhà máy nhận <strong className="text-green-700">{form.wasteType}</strong>, sắp xếp gần kho nhất</>
+                                                : 'Vui lòng quay lại bước 1 để chọn loại phế liệu trước'}
+                                        </p>
                                     </div>
                                     <button
                                         type="button"
-                                        onClick={() => setShowFactoryPicker(true)}
-                                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm"
+                                        onClick={() => {
+                                            if (!form.materialTypeKey) {
+                                                alert('Vui lòng quay lại Bước 1 để chọn loại phế liệu trước khi chọn nhà máy!');
+                                                return;
+                                            }
+                                            setShowFactoryPicker(true);
+                                        }}
+                                        disabled={!form.materialTypeKey}
+                                        className={`flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm ${
+                                            form.materialTypeKey
+                                                ? 'bg-green-600 hover:bg-green-700 text-white'
+                                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                        }`}
                                     >
                                         <span className="material-symbols-outlined text-base">factory</span>
                                         {selectedFactory ? 'Đổi nhà máy' : 'Chọn nhà máy'}
@@ -439,9 +455,53 @@ export default function CreateBatchOrder() {
                                 )}
                             </div>
 
-                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                                <p className="text-xs font-bold text-amber-700">⏳ Phương thức vận chuyển</p>
-                                <p className="text-xs text-amber-600 mt-1">Bạn sẽ chọn phương thức vận chuyển <strong>sau khi nhà máy xác nhận</strong> mua lô hàng này.</p>
+                            {/* ── Chọn phương thức vận chuyển ─────────────── */}
+                            <div>
+                                <p className="font-bold text-slate-800 text-sm mb-3">Phương thức vận chuyển</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setTransportType('RENATS_DRIVER')}
+                                        className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                                            transportType === 'RENATS_DRIVER'
+                                                ? 'border-green-500 bg-green-50 shadow-sm'
+                                                : 'border-slate-200 hover:border-slate-300 bg-white'
+                                        }`}
+                                    >
+                                        <div className="text-2xl mb-2">🚛</div>
+                                        <p className="font-bold text-slate-800 text-sm">Tài xế Re-Nats</p>
+                                        <p className="text-xs text-slate-500 mt-1">Hệ thống điều phối tài xế đến lấy hàng</p>
+                                        {transportType === 'RENATS_DRIVER' && (
+                                            <span className="mt-2 inline-block text-[10px] font-bold bg-green-600 text-white px-2 py-0.5 rounded-full">✓ Đã chọn</span>
+                                        )}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setTransportType('DEPOT_SELF')}
+                                        className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                                            transportType === 'DEPOT_SELF'
+                                                ? 'border-blue-500 bg-blue-50 shadow-sm'
+                                                : 'border-slate-200 hover:border-slate-300 bg-white'
+                                        }`}
+                                    >
+                                        <div className="text-2xl mb-2">🏪</div>
+                                        <p className="font-bold text-slate-800 text-sm">Kho tự vận chuyển</p>
+                                        <p className="text-xs text-slate-500 mt-1">Dùng phương tiện riêng của kho</p>
+                                        {transportType === 'DEPOT_SELF' && (
+                                            <span className="mt-2 inline-block text-[10px] font-bold bg-blue-600 text-white px-2 py-0.5 rounded-full">✓ Đã chọn</span>
+                                        )}
+                                    </button>
+                                </div>
+                                {!transportType && (
+                                    <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                                        <span>⚠️</span> Vui lòng chọn phương thức vận chuyển
+                                    </p>
+                                )}
+                                {transportType === 'RENATS_DRIVER' && (
+                                    <p className="text-xs text-green-700 mt-2 flex items-center gap-1">
+                                        <span>ℹ️</span> Tài xế sẽ được điều phối sau khi nhà máy xác nhận mua lô hàng
+                                    </p>
+                                )}
                             </div>
                         </div>
                     )}
@@ -454,9 +514,17 @@ export default function CreateBatchOrder() {
                         </button>
 
                         {step < STEPS.length ? (
-                            <button type="button" disabled={step === 1 && !form.totalKg} onClick={() => setStep(s => s + 1)}
-                                className={`px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all ${step === 1 && !form.totalKg ? 'bg-slate-300 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}>
-                                Tiếp tục
+                            <button
+                                type="button"
+                                disabled={step === 1 && (!form.wasteType || !form.totalKg)}
+                                onClick={() => setStep(s => s + 1)}
+                                className={`px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all ${
+                                    step === 1 && (!form.wasteType || !form.totalKg)
+                                        ? 'bg-slate-300 cursor-not-allowed'
+                                        : 'bg-green-600 hover:bg-green-700'
+                                }`}
+                            >
+                                {step === 1 && !form.wasteType ? 'Chọn loại phế liệu trước' : step === 1 && !form.totalKg ? 'Nhập số kg trước' : 'Tiếp tục'}
                             </button>
                         ) : (
                             <button type="button" disabled={loading} onClick={handleFinish}

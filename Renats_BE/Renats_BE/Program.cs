@@ -8,6 +8,8 @@ using Renats_BE.Services;
 using Renats_BE.Services.Interfaces;
 using System.Text;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Database ──────────────────────────────────────────────────────────────────

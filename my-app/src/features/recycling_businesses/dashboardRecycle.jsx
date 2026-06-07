@@ -13,9 +13,9 @@ const inlineStyle = `
 
 const DashboardRecycle = () => {
     const [kpis, setKpis] = useState({
-        totalInboundKg: 1248.5,
-        avgImpurityRate: 3.2,
-        inTransitCount: 3
+        totalInboundKg: 0,
+        avgImpurityRate: 0,
+        inTransitCount: 0
     });
     const [transactions, setTransactions] = useState([]);
     const [breakdown, setBreakdown] = useState([]);
@@ -35,9 +35,9 @@ const DashboardRecycle = () => {
             const kpiData = await factoryService.getKpis();
             if (kpiData) {
                 setKpis({
-                    totalInboundKg: kpiData.totalInboundKg || 1248.5,
-                    avgImpurityRate: kpiData.avgImpurityRate || 3.2,
-                    inTransitCount: kpiData.inTransitCount || 3
+                    totalInboundKg: kpiData.totalInboundKg || 0,
+                    avgImpurityRate: kpiData.avgImpurityRate || 0,
+                    inTransitCount: kpiData.inTransitCount || 0
                 });
             }
 
@@ -46,36 +46,7 @@ const DashboardRecycle = () => {
             if (txData && txData.length > 0) {
                 setTransactions(txData);
             } else {
-                // High-quality mock fallback for visualization
-                setTransactions([
-                    {
-                        id: 'trx-1',
-                        batchCode: 'BATCH-2041',
-                        supplierName: 'Vựa Phế Liệu Minh Khôi',
-                        materialType: 'CARDBOARD',
-                        weightKg: 15250,
-                        date: new Date().toISOString(),
-                        status: 'VERIFIED'
-                    },
-                    {
-                        id: 'trx-2',
-                        batchCode: 'BATCH-2042',
-                        supplierName: 'Đại Lý Thu Gom Thành Đạt',
-                        materialType: 'HDPE',
-                        weightKg: 8350,
-                        date: new Date().toISOString(),
-                        status: 'ON_THE_WAY'
-                    },
-                    {
-                        id: 'trx-3',
-                        batchCode: 'BATCH-2043',
-                        supplierName: 'Công Ty Môi Trường Xanh',
-                        materialType: 'IRON',
-                        weightKg: 44900,
-                        date: new Date(Date.now() - 86400000).toISOString(),
-                        status: 'VERIFIED'
-                    }
-                ]);
+                setTransactions([]);
             }
 
             // Fetch Material Breakdown
@@ -83,31 +54,12 @@ const DashboardRecycle = () => {
             if (breakdownData && breakdownData.length > 0) {
                 setBreakdown(breakdownData);
             } else {
-                setBreakdown([
-                    { materialType: 'METAL', totalKg: 45000 },
-                    { materialType: 'PLASTIC', totalKg: 25000 },
-                    { materialType: 'PAPER', totalKg: 20000 },
-                    { materialType: 'OTHER', totalKg: 10000 }
-                ]);
+                setBreakdown([]);
             }
         } catch (err) {
             console.error('Error fetching dashboard data:', err);
-            // Default mock fallbacks
-            setTransactions([
-                {
-                    id: 'trx-1',
-                    batchCode: 'BATCH-2041',
-                    supplierName: 'Vựa Phế Liệu Minh Khôi',
-                    materialType: 'CARDBOARD',
-                    weightKg: 15250,
-                    date: new Date().toISOString(),
-                    status: 'VERIFIED'
-                }
-            ]);
-            setBreakdown([
-                { materialType: 'METAL', totalKg: 45000 },
-                { materialType: 'PLASTIC', totalKg: 25000 }
-            ]);
+            setTransactions([]);
+            setBreakdown([]);
         } finally {
             setLoading(false);
         }

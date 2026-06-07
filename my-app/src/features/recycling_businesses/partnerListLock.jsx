@@ -21,19 +21,9 @@ const PartnerList = () => {
                 setDepots(res.data || []);
             } catch (err) {
                 console.error('Error fetching partners:', err);
-                toast.error('Không thể tải danh sách đối tác. Đang hiển thị dữ liệu mô phỏng!');
-                // Fallback mock data
+                toast.error('Không thể tải danh sách đối tác từ máy chủ!');
                 setIsPremium(false);
-                setDepots([
-                    { id: '1', companyName: 'Vựa Phế Liệu Minh Khôi', city: 'Quận 9', province: 'TP. Hồ Chí Minh', totalTransactions: 48, reputationScore: null, contactPerson: null, isPremiumLocked: true },
-                    { id: '2', companyName: 'Đại Lý Thu Gom Thành Đạt', city: 'TP. Thủ Đức', province: 'TP. Hồ Chí Minh', totalTransactions: 29, reputationScore: null, contactPerson: null, isPremiumLocked: true },
-                    { id: '3', companyName: 'Công Ty Môi Trường Xanh', city: 'Bình Thạnh', province: 'TP. Hồ Chí Minh', totalTransactions: 63, reputationScore: null, contactPerson: null, isPremiumLocked: true },
-                    { id: '4', companyName: 'An Khang Recycling', city: 'Biên Hòa', province: 'Đồng Nai', totalTransactions: 112, reputationScore: null, contactPerson: null, isPremiumLocked: true },
-                    { id: '5', companyName: 'Phú Mỹ Xanh', city: 'Mỹ Tho', province: 'Tiền Giang', totalTransactions: 77, reputationScore: null, contactPerson: null, isPremiumLocked: true },
-                    { id: '6', companyName: 'Tân Tiến Steel', city: 'Đà Nẵng', province: 'Đà Nẵng', totalTransactions: 201, reputationScore: null, contactPerson: null, isPremiumLocked: true },
-                    { id: '7', companyName: 'Hoàng Gia Metal', city: 'Vũng Tàu', province: 'Bà Rịa - Vũng Tàu', totalTransactions: 58, reputationScore: null, contactPerson: null, isPremiumLocked: true },
-                    { id: '8', companyName: 'Minh Long Plastic', city: 'Tân An', province: 'Long An', totalTransactions: 34, reputationScore: null, contactPerson: null, isPremiumLocked: true },
-                ]);
+                setDepots([]);
             } finally {
                 setLoading(false);
             }
