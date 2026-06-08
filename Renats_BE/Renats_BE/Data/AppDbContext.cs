@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql;
 using Renats_BE.Models;
 using Renats_BE.Models.Enums;
+
 
 namespace Renats_BE.Data;
 
@@ -87,7 +89,11 @@ public class AppDbContext : DbContext
             e.Property(f => f.ContactPerson).HasColumnName("contact_person").HasMaxLength(255);
             e.Property(f => f.ContactPhone).HasColumnName("contact_phone").HasMaxLength(20);
             // Profile fields
-            e.Property(f => f.PrimaryMaterialType).HasColumnName("primary_material_type").HasConversion<string>();
+            // Dùng ValueConverter để lưu tiếng Việt vào DB thay vì tên enum tiếng Anh
+            var matTypeConverter = new ValueConverter<MaterialType?, string?>(
+                v => v.HasValue ? MaterialTypeHelper.ToVietnamese(v.Value) : null,
+                v => string.IsNullOrEmpty(v) ? null : MaterialTypeHelper.FromString(v));
+            e.Property(f => f.PrimaryMaterialType).HasColumnName("primary_material_type").HasConversion(matTypeConverter);
             e.Property(f => f.AcceptedMaterialTypes).HasColumnName("accepted_material_types");
             e.Property(f => f.CapacityPerMonthTon).HasColumnName("capacity_per_month_ton").HasPrecision(12, 2);
             e.Property(f => f.MinPurityRequired).HasColumnName("min_purity_required").HasPrecision(5, 2);
@@ -221,7 +227,11 @@ public class AppDbContext : DbContext
             e.Property(b => b.DepotId).HasColumnName("depot_id");
             e.Property(b => b.BatchCode).HasColumnName("batch_code").HasMaxLength(100);
             e.HasIndex(b => b.BatchCode).IsUnique();
-            e.Property(b => b.MaterialType).HasColumnName("material_type").HasConversion<string>();
+            // Dùng ValueConverter để lưu tiếng Việt vào DB
+            var batchMatConverter = new ValueConverter<MaterialType, string>(
+                v => MaterialTypeHelper.ToVietnamese(v),
+                v => MaterialTypeHelper.FromString(v));
+            e.Property(b => b.MaterialType).HasColumnName("material_type").HasConversion(batchMatConverter);
             e.Property(b => b.EstimatedWeightKg).HasColumnName("estimated_weight_kg").HasPrecision(14, 2);
             e.Property(b => b.ActualWeightKg).HasColumnName("actual_weight_kg").HasPrecision(14, 2);
             e.Property(b => b.MoisturePercentage).HasColumnName("moisture_percentage").HasPrecision(5, 2);

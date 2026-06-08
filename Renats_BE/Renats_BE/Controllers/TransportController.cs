@@ -237,7 +237,7 @@ namespace Renats_BE.Controllers.Transport
 
         // POST /api/transport/jobs/{jobId}/reject — Từ chối / huỷ đơn
         [HttpPost("jobs/{jobId}/reject")]
-        public async Task<IActionResult> RejectJob(Guid jobId, [FromBody] RejectDto dto)
+        public async Task<IActionResult> RejectJob(Guid jobId, [FromBody] TransportRejectDto dto)
         {
             var job = await _db.TransportJobs
                 .Include(t => t.BatchOrder).ThenInclude(o => o.Batch)
@@ -296,7 +296,7 @@ namespace Renats_BE.Controllers.Transport
         public string? Note { get; set; }
     }
 
-    public class RejectDto
+    public class TransportRejectDto
     {
         public string Reason { get; set; } = string.Empty;
     }
