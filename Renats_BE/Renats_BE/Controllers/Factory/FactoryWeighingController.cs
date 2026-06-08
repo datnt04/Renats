@@ -114,7 +114,7 @@ public class FactoryWeighingController : ControllerBase
 
     // POST /api/factory/weighing/{orderId}/reject
     [HttpPost("{orderId}/reject")]
-    public async Task<IActionResult> RejectTruck(Guid orderId, [FromBody] RejectDto dto)
+    public async Task<IActionResult> RejectTruck(Guid orderId, [FromBody] FactoryWeighingRejectDto dto)
     {
         var order = await _db.BatchOrders
             .Include(o => o.TransportJob)
@@ -141,5 +141,5 @@ public class FactoryWeighingController : ControllerBase
         public string? Note { get; set; }
     }
 
-    public class RejectDto { public string? Reason { get; set; } }
+    public class FactoryWeighingRejectDto { public string? Reason { get; set; } }
 }
