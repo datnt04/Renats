@@ -78,6 +78,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "Re-Nats API", Version = "v1" });
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
 
     // Thêm hỗ trợ Authorization header trong Swagger UI
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
@@ -131,4 +132,4 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+app.Run();
