@@ -12,33 +12,35 @@ public static class DataSeeder
         // ── 0. Đảm bảo các giá trị enum tồn tại trong PostgreSQL ────────────────
         await EnsureEnumValuesAsync(db);
 
-        // Reset/clean up previous seeded data to ensure fresh seeding with pending jobs
-        var oldEmails = new[] { "giango9981@gmail.com", "factory@renats.vn", "depot1@renats.vn", "depot2@renats.vn", "depot3@renats.vn", "driver@renats.vn" };
-        var oldUsers = await db.Users.Where(u => oldEmails.Contains(u.Email)).ToListAsync();
-        if (oldUsers.Any())
+        // ── QUAN TRỌNG: Chỉ seed 1 lần duy nhất khi database chưa có dữ liệu mẫu.
+        // Không bao giờ xóa dữ liệu đã tồn tại. Điều này đảm bảo các thay đổi
+        // của user (cập nhật profile, tạo request, v.v.) không bị mất khi restart server.
+        var seededEmails = new[] { "giango9981@gmail.com", "factory@renats.vn", "depot1@renats.vn", "depot2@renats.vn", "depot3@renats.vn", "driver@renats.vn" };
+        var alreadySeeded = await db.Users.AnyAsync(u => seededEmails.Contains(u.Email));
+        if (alreadySeeded)
         {
-            db.WeightVerifications.RemoveRange(db.WeightVerifications);
-            db.WeightTickets.RemoveRange(db.WeightTickets);
-            db.Invoices.RemoveRange(db.Invoices);
-            db.TransportTrackingLogs.RemoveRange(db.TransportTrackingLogs);
-            db.TransportJobs.RemoveRange(db.TransportJobs);
-            db.BatchBids.RemoveRange(db.BatchBids);
-            db.BatchOrders.RemoveRange(db.BatchOrders);
-            db.BatchImages.RemoveRange(db.BatchImages);
-            db.InventoryBatches.RemoveRange(db.InventoryBatches);
-            db.PickupResults.RemoveRange(db.PickupResults);
-            db.PickupRequestImages.RemoveRange(db.PickupRequestImages);
-            db.PickupRequestItems.RemoveRange(db.PickupRequestItems);
-            db.PickupRequests.RemoveRange(db.PickupRequests);
-            db.Sellers.RemoveRange(db.Sellers);
-            db.Factories.RemoveRange(db.Factories);
-            db.Depots.RemoveRange(db.Depots);
-            db.Drivers.RemoveRange(db.Drivers);
-            db.Notifications.RemoveRange(db.Notifications);
-            db.Users.RemoveRange(oldUsers);
-            await db.SaveChangesAsync();
-            Console.WriteLine("🧹 [Seeder] Đã dọn dẹp dữ liệu mẫu cũ để chuẩn bị seed mới.");
+            Console.WriteLine("ℹ️  [Seeder] Dữ liệu mẫu đã tồn tại, bỏ qua seed để giữ nguyên dữ liệu thật.");
+
+            // Chỉ hash lại password nếu chưa được BCrypt hash (migrate data cũ)
+            var usersToFix = await db.Users.Where(u => seededEmails.Contains(u.Email)).ToListAsync();
+            foreach (var u in usersToFix)
+            {
+                if (!u.PasswordHash.StartsWith("$2"))
+                {
+                    u.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Renats@2025");
+                    db.Entry(u).State = EntityState.Modified;
+                }
+            }
+            if (db.ChangeTracker.HasChanges())
+            {
+                await db.SaveChangesAsync();
+                Console.WriteLine("✅ [Seeder] Đã BCrypt-hash lại tài khoản mẫu chưa được hash.");
+            }
+            return; // Thoát sớm, không làm gì thêm
         }
+
+        // Chỉ chạy đến đây nếu database CHƯA có dữ liệu mẫu (lần đầu tiên)
+        Console.WriteLine("🌱 [Seeder] Lần đầu khởi động, bắt đầu seed dữ liệu mẫu...");
 
         // ── 1. Seed Seller ──────────────────────────────────────────────────────
         await SeedSellerAsync(db);
@@ -46,10 +48,9 @@ public static class DataSeeder
         // ── 2. Seed Factory + Depots + Batches ─────────────────────────────────
         await SeedFactoryAndDepotsAsync(db);
 
-        // ── Hashing previously seeded users' passwords if they are raw or wrong
-        var seededEmails = new[] { "giango9981@gmail.com", "factory@renats.vn", "depot1@renats.vn", "depot2@renats.vn", "depot3@renats.vn", "driver@renats.vn" };
-        var usersToFix = await db.Users.Where(u => seededEmails.Contains(u.Email)).ToListAsync();
-        foreach (var u in usersToFix)
+        // Hash password cho các tài khoản mới seed
+        var newSeededUsers = await db.Users.Where(u => seededEmails.Contains(u.Email)).ToListAsync();
+        foreach (var u in newSeededUsers)
         {
             if (!u.PasswordHash.StartsWith("$2"))
             {
@@ -60,7 +61,7 @@ public static class DataSeeder
         if (db.ChangeTracker.HasChanges())
         {
             await db.SaveChangesAsync();
-            Console.WriteLine("✅ [Seeder] Đã BCrypt-hash lại tất cả tài khoản mẫu.");
+            Console.WriteLine("✅ [Seeder] Đã BCrypt-hash tất cả tài khoản mẫu.");
         }
     }
 
