@@ -92,63 +92,11 @@ const OrderProcess = () => {
                 }));
                 setTrucks(mapped);
             } else {
-                // Fallback to fully immersive mock queue for local testing
-                setTrucks([
-                    {
-                        id: '00000000-0000-0000-0000-000000000201',
-                        plate: '29H-123.45',
-                        driver: 'Nguyễn Văn Hùng',
-                        material: 'CARDBOARD',
-                        declaredWeight: 15400,
-                        unitPrice: 3200,
-                        measuredWeight: 15250,
-                        impurityWeight: 250,
-                        supplier: 'Vựa Phế Liệu Minh Khôi',
-                        status: 'ON_THE_WAY',
-                    },
-                    {
-                        id: '00000000-0000-0000-0000-000000000202',
-                        plate: '51C-998.12',
-                        driver: 'Trần Quốc Tuấn',
-                        material: 'HDPE',
-                        declaredWeight: 8400,
-                        unitPrice: 15000,
-                        measuredWeight: 8350,
-                        impurityWeight: 120,
-                        supplier: 'Đại Lý Thu Gom Thành Đạt',
-                        status: 'ON_THE_WAY',
-                    },
-                    {
-                        id: '00000000-0000-0000-0000-000000000203',
-                        plate: '60C-456.78',
-                        driver: 'Lê Minh Tâm',
-                        material: 'IRON',
-                        declaredWeight: 45000,
-                        unitPrice: 12000,
-                        measuredWeight: 44900,
-                        impurityWeight: 900,
-                        supplier: 'Công Ty Môi Trường Xanh',
-                        status: 'ON_THE_WAY',
-                    }
-                ]);
+                setTrucks([]);
             }
         } catch (err) {
             console.error('Error fetching weighing queue:', err);
-            // Fallback mock queue
-            setTrucks([
-                {
-                    id: '00000000-0000-0000-0000-000000000201',
-                    plate: '29H-123.45',
-                    driver: 'Nguyễn Văn Hùng',
-                    material: 'CARDBOARD',
-                    declaredWeight: 15400,
-                    unitPrice: 3200,
-                    measuredWeight: 15250,
-                    impurityWeight: 250,
-                    supplier: 'Vựa Phế Liệu Minh Khôi',
-                    status: 'ON_THE_WAY',
-                }
-            ]);
+            setTrucks([]);
         } finally {
             setLoading(false);
         }

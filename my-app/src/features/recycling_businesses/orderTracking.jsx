@@ -65,50 +65,16 @@ const OrderTracking = () => {
       const data = await factoryService.getOrders();
       if (data && data.length > 0) {
         setOrders(data);
-        // Chọn mặc định đơn hàng đầu tiên
         loadOrderDetail(data[0].id);
       } else {
-        // Mock fallback nếu database trống
-        const mockOrders = [
-          {
-            id: 'ord-shopee-1',
-            batchCode: 'BATCH-2601',
-            materialType: 'CARDBOARD',
-            depotName: 'Vựa Phế Liệu Minh Khôi',
-            agreedPrice: 3200,
-            totalAmount: 40000000,
-            status: 'IN_PROGRESS',
-            transportStatus: 'ON_THE_WAY',
-            createdAt: new Date().toISOString()
-          },
-          {
-            id: 'ord-tiktok-2',
-            batchCode: 'BATCH-2602',
-            materialType: 'HDPE',
-            depotName: 'Đại Lý Thu Gom Thành Đạt',
-            agreedPrice: 15000,
-            totalAmount: 126000000,
-            status: 'ACCEPTED',
-            transportStatus: 'ASSIGNED',
-            createdAt: new Date(Date.now() - 3600000).toISOString()
-          },
-          {
-            id: 'ord-verified-3',
-            batchCode: 'BATCH-2500',
-            materialType: 'PAPER',
-            depotName: 'Vựa Phế Liệu Minh Khôi',
-            agreedPrice: 2800,
-            totalAmount: 41580000,
-            status: 'VERIFIED',
-            transportStatus: 'DELIVERED',
-            createdAt: new Date(Date.now() - 86400000 * 2).toISOString()
-          }
-        ];
-        setOrders(mockOrders);
-        loadOrderDetail(mockOrders[0].id, mockOrders);
+        setOrders([]);
+        setSelectedOrder(null);
       }
     } catch (err) {
       console.error(err);
+      setOrders([]);
+      setSelectedOrder(null);
+    } finally {
       setLoading(false);
     }
   };
@@ -118,62 +84,11 @@ const OrderTracking = () => {
       const detail = await factoryService.getOrderDetail(id);
       if (detail) {
         setSelectedOrder(detail);
+      } else {
+        setSelectedOrder(null);
       }
     } catch {
-      // Mock detail fallback
-      const currentList = fallbackList || orders;
-      const base = currentList.find(o => o.id === id) || currentList[0];
-      const isFirst = base.batchCode.includes('2601') || base.batchCode.includes('2500');
-      
-      const mockDetail = {
-        id: base.id,
-        status: base.status,
-        agreedPrice: base.agreedPrice,
-        totalAmount: base.totalAmount,
-        createdAt: base.createdAt,
-        batch: {
-          batchCode: base.batchCode,
-          materialType: base.materialType,
-          estimatedWeightKg: base.materialType === 'CARDBOARD' ? 12500 : 8400,
-          actualWeightKg: base.status === 'VERIFIED' ? 14850 : null,
-          unitPrice: base.agreedPrice,
-          description: base.materialType === 'CARDBOARD' 
-            ? 'Bao bì carton sóng thu gom từ vựa.' 
-            : 'Nhựa HDPE phân loại, đóng kiện thô.',
-          thumbnailImageUrl: base.materialType === 'CARDBOARD'
-            ? 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?w=800'
-            : 'https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?w=800',
-          depot: {
-            companyName: base.depotName,
-            address: isFirst ? '45 Đường Số 9, Phường Long Bình, Quận 9' : '12 Linh Đông, TP. Thủ Đức',
-            city: 'TP. Hồ Chí Minh',
-            reputationScore: isFirst ? 92 : 78
-          }
-        },
-        transport: {
-          id: 'job-' + base.id,
-          status: base.transportStatus,
-          pickupAddress: isFirst 
-            ? 'Điểm tập kết phế liệu Quận 9, TP.HCM' 
-            : 'Kho trung chuyển phế liệu Thủ Đức, TP.HCM',
-          deliveryAddress: isFirst ? '45 Đường Số 9, Phường Long Bình, Quận 9' : '12 Linh Đông, TP. Thủ Đức',
-          vehiclePlate: '51C-882.91',
-          driverName: 'Nguyễn Văn Minh',
-          trackingLogs: base.status === 'VERIFIED' ? [
-            { id: '1', note: 'Tài xế check-in cổng Kho điểm tập kết', createdAt: new Date(Date.now() - 3600000 * 5).toISOString(), latitude: 10.7876, longitude: 106.6346 },
-            { id: '2', note: 'Xác thực hồ sơ thu gom thành công', createdAt: new Date(Date.now() - 3600000 * 4.5).toISOString(), latitude: 10.7876, longitude: 106.6346 },
-            { id: '3', note: 'Check-out Kho thu gom. Xe di chuyển về vựa', createdAt: new Date(Date.now() - 3600000 * 4).toISOString(), latitude: 10.795, longitude: 106.645 },
-            { id: '4', note: 'Check-in tại Vựa Phế Liệu Minh Khôi', createdAt: new Date(Date.now() - 3600000 * 3).toISOString(), latitude: 10.8231, longitude: 106.6297 },
-            { id: '5', note: 'Chốt xuất kho vựa. Vận chuyển về nhà máy', createdAt: new Date(Date.now() - 3600000 * 2).toISOString(), latitude: 10.8231, longitude: 106.6297 },
-            { id: '6', note: 'Xe cập bến trạm bảo vệ nhà máy Re-Nats. Check-in cổng', createdAt: new Date(Date.now() - 3600000 * 1).toISOString(), latitude: 10.8812, longitude: 106.5123 }
-          ] : (base.status === 'IN_PROGRESS' ? [
-            { id: '1', note: 'Tài xế check-in cổng Kho điểm tập kết', createdAt: new Date(Date.now() - 3600000 * 2).toISOString(), latitude: isFirst ? 10.7876 : 10.8524, longitude: isFirst ? 106.6346 : 106.7582 },
-            { id: '2', note: 'Xác thực hồ sơ thành công', createdAt: new Date(Date.now() - 3600000 * 1.5).toISOString(), latitude: isFirst ? 10.7876 : 10.8524, longitude: isFirst ? 106.6346 : 106.7582 },
-            { id: '3', note: 'Check-out kho trung chuyển. Đang di chuyển', createdAt: new Date(Date.now() - 3600000).toISOString(), latitude: isFirst ? 10.805 : 10.835, longitude: isFirst ? 106.632 : 106.74 }
-          ] : [])
-        }
-      };
-      setSelectedOrder(mockDetail);
+      setSelectedOrder(null);
     } finally {
       setLoading(false);
     }
