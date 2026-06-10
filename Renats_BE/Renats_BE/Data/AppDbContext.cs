@@ -315,6 +315,8 @@ public class AppDbContext : DbContext
             e.Property(l => l.Latitude).HasColumnName("latitude").HasPrecision(10, 7);
             e.Property(l => l.Longitude).HasColumnName("longitude").HasPrecision(10, 7);
             e.Property(l => l.Note).HasColumnName("note");
+            e.Property(l => l.LogType).HasColumnName("log_type").HasMaxLength(50);
+            e.Property(l => l.ImageUrl).HasColumnName("image_url");
             e.Property(l => l.CreatedAt).HasColumnName("created_at");
             e.HasOne(l => l.TransportJob).WithMany(t => t.TrackingLogs).HasForeignKey(l => l.TransportJobId).OnDelete(DeleteBehavior.Cascade);
         });

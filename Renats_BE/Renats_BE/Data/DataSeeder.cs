@@ -21,11 +21,11 @@ public static class DataSeeder
         {
             Console.WriteLine("ℹ️  [Seeder] Dữ liệu mẫu đã tồn tại, bỏ qua seed để giữ nguyên dữ liệu thật.");
 
-            // Chỉ hash lại password nếu chưa được BCrypt hash (migrate data cũ)
+            // Chỉ hash lại hoặc cập nhật password nếu chưa được BCrypt hash hoặc mật khẩu không khớp với Renats@2025
             var usersToFix = await db.Users.Where(u => seededEmails.Contains(u.Email)).ToListAsync();
             foreach (var u in usersToFix)
             {
-                if (!u.PasswordHash.StartsWith("$2"))
+                if (!u.PasswordHash.StartsWith("$2") || !BCrypt.Net.BCrypt.Verify("Renats@2025", u.PasswordHash))
                 {
                     u.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Renats@2025");
                     db.Entry(u).State = EntityState.Modified;
@@ -34,7 +34,7 @@ public static class DataSeeder
             if (db.ChangeTracker.HasChanges())
             {
                 await db.SaveChangesAsync();
-                Console.WriteLine("✅ [Seeder] Đã BCrypt-hash lại tài khoản mẫu chưa được hash.");
+                Console.WriteLine("✅ [Seeder] Đã cập nhật/reset mật khẩu các tài khoản mẫu thành Renats@2025.");
             }
             return; // Thoát sớm, không làm gì thêm
         }
@@ -52,7 +52,7 @@ public static class DataSeeder
         var newSeededUsers = await db.Users.Where(u => seededEmails.Contains(u.Email)).ToListAsync();
         foreach (var u in newSeededUsers)
         {
-            if (!u.PasswordHash.StartsWith("$2"))
+            if (!u.PasswordHash.StartsWith("$2") || !BCrypt.Net.BCrypt.Verify("Renats@2025", u.PasswordHash))
             {
                 u.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Renats@2025");
                 db.Entry(u).State = EntityState.Modified;

@@ -25,11 +25,11 @@ public static class DbSeeder
         var admin = await db.Users.FirstOrDefaultAsync(u => u.Email == AdminEmail);
         if (admin != null)
         {
-            if (!admin.PasswordHash.StartsWith("$2"))
+            if (!admin.PasswordHash.StartsWith("$2") || !BCrypt.Net.BCrypt.Verify(AdminPassword, admin.PasswordHash))
             {
                 admin.PasswordHash = BCrypt.Net.BCrypt.HashPassword(AdminPassword);
                 await db.SaveChangesAsync();
-                Console.WriteLine("✅ [Seeder] Đã cập nhật mật khẩu Admin sang BCrypt.");
+                Console.WriteLine("✅ [Seeder] Đã cập nhật/reset mật khẩu Admin sang BCrypt.");
             }
             else
             {

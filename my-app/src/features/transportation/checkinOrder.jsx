@@ -92,13 +92,34 @@ export default function CheckinOrder() {
     const handleStartTrip = async () => {
         if (!job) return;
         try {
+            let imageUrl1 = null;
+            let imageUrl2 = null;
+
+            if (photo1 && photo1.startsWith('http')) {
+                imageUrl1 = photo1;
+            }
+            if (photo2 && photo2.startsWith('http')) {
+                imageUrl2 = photo2;
+            }
+
             await transportService.updateJobStatus(job.id, 'ON_THE_WAY');
             
+            // Phân đoạn 3: Check-in Vựa đối tác (chụp ảnh thùng xe trống)
             await transportService.checkin(job.id, {
-                type: 'DEPOT',
+                type: 'checkin_depot',
                 latitude: 10.7876,
                 longitude: 106.6346,
-                note: 'Tài xế đã xác nhận thùng xe trống và lên hàng tại vựa thành công.'
+                note: 'Tài xế đã xác nhận thùng xe trống tại vựa thành công.',
+                imageUrl: imageUrl1
+            });
+
+            // Phân đoạn 4: Check-out Vựa đối tác (chụp ảnh sau khi lên hàng & phiếu cân)
+            await transportService.checkin(job.id, {
+                type: 'checkout_depot',
+                latitude: 10.8231,
+                longitude: 106.6297,
+                note: 'Tài xế chốt phiếu cân xuất kho và bắt đầu vận chuyển về nhà máy.',
+                imageUrl: imageUrl2
             });
 
             toast?.success('Bắt đầu di chuyển đến nhà máy!');

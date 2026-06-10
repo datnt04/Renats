@@ -67,11 +67,20 @@ const MATERIAL_LABEL = {
 };
 
 export default function StartOrder() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
     const toast = useToast();
     const [trips, setTrips] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const tabParam = new URLSearchParams(window.location.search).get('tab') || 'active';
+    const [activeTab, setActiveTab] = useState(tabParam);
+
+    useEffect(() => {
+        if (tabParam === 'active' || tabParam === 'history') {
+            setActiveTab(tabParam);
+        }
+    }, [tabParam]);
 
     const loadTrips = useCallback(async () => {
         try {
@@ -89,7 +98,19 @@ export default function StartOrder() {
         loadTrips();
     }, [loadTrips]);
 
+    const handleTabChange = (tabName) => {
+        setActiveTab(tabName);
+        navigate(`/van-chuyen/chuyen-xe?tab=${tabName}`);
+    };
+
     const activeTripsCount = trips.filter(t => t.status !== 'DELIVERED' && t.status !== 'CANCELLED').length;
+    const historyTripsCount = trips.filter(t => t.status === 'DELIVERED' || t.status === 'CANCELLED').length;
+
+    const filteredTrips = trips.filter(trip => 
+        activeTab === 'active' 
+            ? (trip.status !== 'DELIVERED' && trip.status !== 'CANCELLED')
+            : (trip.status === 'DELIVERED' || trip.status === 'CANCELLED')
+    );
 
     return (
         <>
@@ -142,24 +163,56 @@ export default function StartOrder() {
 
                     {/* Main content */}
                     <main className="flex-1 p-4 pb-32 space-y-5 relative z-10 -mt-2">
+                        {/* Tab Switcher */}
+                        <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-100">
+                            <button
+                                onClick={() => handleTabChange('active')}
+                                className={`flex-1 py-2 text-center text-xs font-bold rounded-lg transition-all ${
+                                    activeTab === 'active'
+                                        ? 'bg-green-600 text-white shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-800'
+                                }`}
+                            >
+                                Đang hoạt động ({activeTripsCount})
+                            </button>
+                            <button
+                                onClick={() => handleTabChange('history')}
+                                className={`flex-1 py-2 text-center text-xs font-bold rounded-lg transition-all ${
+                                    activeTab === 'history'
+                                        ? 'bg-green-600 text-white shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-800'
+                                }`}
+                            >
+                                Lịch sử chuyến đi ({historyTripsCount})
+                            </button>
+                        </div>
+
                         {loading ? (
                             Array.from({ length: 2 }).map((_, i) => (
                                 <div key={i} className="h-48 bg-slate-100 rounded-2xl animate-pulse" />
                             ))
-                        ) : trips.length === 0 ? (
+                        ) : filteredTrips.length === 0 ? (
                             <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                                 <span className="material-symbols-outlined text-5xl text-slate-300 block mb-3">local_shipping</span>
-                                <p className="font-semibold text-slate-505">Chưa nhận chuyến xe nào</p>
-                                <p className="text-xs text-slate-400 mt-1">Vui lòng quay lại màn hình "Chợ đơn" để nhận đơn hàng.</p>
-                                <button
-                                    onClick={() => navigate('/transport/market')}
-                                    className="mt-5 bg-green-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-green-700 transition"
-                                >
-                                    Đến Chợ đơn
-                                </button>
+                                <p className="font-semibold text-slate-505">
+                                    {activeTab === 'active' ? 'Chưa nhận chuyến xe nào' : 'Chưa có chuyến đi lịch sử'}
+                                </p>
+                                <p className="text-xs text-slate-400 mt-1">
+                                    {activeTab === 'active' 
+                                        ? 'Vui lòng quay lại màn hình "Chợ đơn" để nhận đơn hàng.'
+                                        : 'Các chuyến đi hoàn thành sẽ được lưu trữ tại đây.'}
+                                </p>
+                                {activeTab === 'active' && (
+                                    <button
+                                        onClick={() => navigate('/transport/market')}
+                                        className="mt-5 bg-green-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-green-700 transition"
+                                    >
+                                        Đến Chợ đơn
+                                    </button>
+                                )}
                             </div>
                         ) : (
-                            trips.map(trip => {
+                            filteredTrips.map(trip => {
                                 const isAssigned = trip.status === 'ASSIGNED';
                                 const isPickedUp = trip.status === 'PICKED_UP';
                                 const isOnTheWay = trip.status === 'ON_THE_WAY' || isPickedUp;
@@ -257,10 +310,15 @@ export default function StartOrder() {
                                 <span className="material-symbols-outlined text-2xl mb-0.5">storefront</span>
                                 <span className="text-[10px] font-medium">Chợ đơn</span>
                             </Link>
-                            <Link to="/van-chuyen/chuyen-xe" className="flex flex-col items-center justify-center w-full h-16 pb-1 text-primary">
-                                <span className="material-symbols-outlined text-2xl mb-0.5 fill-current">local_shipping</span>
+                            <button
+                                onClick={() => handleTabChange('active')}
+                                className={`flex flex-col items-center justify-center w-full h-16 pb-1 ${
+                                    activeTab === 'active' ? 'text-green-600' : 'text-slate-400 hover:text-primary transition-colors'
+                                }`}
+                            >
+                                <span className={`material-symbols-outlined text-2xl mb-0.5 ${activeTab === 'active' ? 'fill-current' : ''}`}>local_shipping</span>
                                 <span className="text-[10px] font-bold">Chuyến đi</span>
-                            </Link>
+                            </button>
                             <div className="w-full flex justify-center h-full relative z-10">
                                 <Link to="/van-chuyen/checkin" className="qr-btn-container flex flex-col items-center justify-center w-full">
                                     <div className="qr-btn w-14 h-14 rounded-full flex items-center justify-center text-white transform transition-transform active:scale-95 border-4 border-slate-50">
@@ -269,13 +327,26 @@ export default function StartOrder() {
                                     <span className="text-[10px] font-medium text-slate-500 mt-1">QR Code</span>
                                 </Link>
                             </div>
-                            <button className="flex flex-col items-center justify-center w-full h-16 pb-1 text-slate-400 hover:text-primary transition-colors">
+                            <button
+                                onClick={() => handleTabChange('history')}
+                                className={`flex flex-col items-center justify-center w-full h-16 pb-1 ${
+                                    activeTab === 'history' ? 'text-green-600' : 'text-slate-400 hover:text-primary transition-colors'
+                                }`}
+                            >
                                 <span className="material-symbols-outlined text-2xl mb-0.5">history</span>
                                 <span className="text-[10px] font-medium">Lịch sử</span>
                             </button>
-                            <button className="flex flex-col items-center justify-center w-full h-16 pb-1 text-slate-400 hover:text-primary transition-colors">
-                                <span className="material-symbols-outlined text-2xl mb-0.5">person</span>
-                                <span className="text-[10px] font-medium">Tài khoản</span>
+                            <button
+                                onClick={() => {
+                                    if (window.confirm("Bạn có chắc chắn muốn đăng xuất?")) {
+                                        logout();
+                                        navigate('/dang-nhap');
+                                    }
+                                }}
+                                className="flex flex-col items-center justify-center w-full h-16 pb-1 text-slate-400 hover:text-primary transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-2xl mb-0.5">logout</span>
+                                <span className="text-[10px] font-medium">Đăng xuất</span>
                             </button>
                         </div>
                     </nav>

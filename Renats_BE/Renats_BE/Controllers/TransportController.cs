@@ -25,7 +25,7 @@ namespace Renats_BE.Controllers.Transport
 
         // GET /api/transport/depots-with-jobs — Driver lấy danh sách kho có đơn cần vận chuyển
         [HttpGet("depots-with-jobs")]
-        public async Task<IActionResult> GetDepotsWithJobs()
+        public async Task<IActionResult> GetDepotsWithJobs([FromQuery] decimal? lat, [FromQuery] decimal? lng)
         {
             // Lấy danh sách các kho của các đơn vận chuyển PENDING và chưa gán Driver
             var depots = await _db.TransportJobs
@@ -46,7 +46,9 @@ namespace Renats_BE.Controllers.Transport
                     address = d.Address,
                     city = d.City ?? d.Province ?? "TP.HCM",
                     pendingJobCount = pendingCount,
-                    distanceKm = 4.8m // Khoảng cách giả lập
+                    distanceKm = (lat.HasValue && lng.HasValue)
+                        ? CalculateDistance(lat, lng, d.Latitude, d.Longitude)
+                        : 4.8m // Khoảng cách giả lập
                 };
             }).ToList();
 
@@ -64,18 +66,26 @@ namespace Renats_BE.Controllers.Transport
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
-            var result = jobs.Select(t => new
-            {
-                id = t.Id,
-                status = t.Status.ToString(),
-                createdAtFormatted = GetTimeAgo(t.CreatedAt),
-                depotName = t.BatchOrder.Batch.Depot.CompanyName,
-                factoryName = t.BatchOrder.Factory.CompanyName,
-                distanceKm = t.EstimatedDistanceKm ?? 15.2m,
-                materialType = t.BatchOrder.Batch.MaterialType.ToString(),
-                totalKg = t.BatchOrder.Batch.ActualWeightKg ?? t.BatchOrder.Batch.EstimatedWeightKg,
-                vehicleType = GetVehicleTypeForWeight(t.BatchOrder.Batch.ActualWeightKg ?? t.BatchOrder.Batch.EstimatedWeightKg),
-                transportFee = t.TransportFee ?? 250000m
+            var result = jobs.Select(t => {
+                var dist = t.EstimatedDistanceKm ?? CalculateDistance(
+                    t.PickupLatitude ?? t.BatchOrder.Batch.Depot.Latitude,
+                    t.PickupLongitude ?? t.BatchOrder.Batch.Depot.Longitude,
+                    t.DeliveryLatitude ?? t.BatchOrder.Factory.Latitude,
+                    t.DeliveryLongitude ?? t.BatchOrder.Factory.Longitude);
+
+                return new
+                {
+                    id = t.Id,
+                    status = t.Status.ToString(),
+                    createdAtFormatted = GetTimeAgo(t.CreatedAt),
+                    depotName = t.BatchOrder.Batch.Depot.CompanyName,
+                    factoryName = t.BatchOrder.Factory.CompanyName,
+                    distanceKm = dist,
+                    materialType = t.BatchOrder.Batch.MaterialType.ToString(),
+                    totalKg = t.BatchOrder.Batch.ActualWeightKg ?? t.BatchOrder.Batch.EstimatedWeightKg,
+                    vehicleType = GetVehicleTypeForWeight(t.BatchOrder.Batch.ActualWeightKg ?? t.BatchOrder.Batch.EstimatedWeightKg),
+                    transportFee = t.TransportFee ?? Math.Max(150000m, dist * 15000m)
+                };
             }).ToList();
 
             return Ok(result);
@@ -152,22 +162,40 @@ namespace Renats_BE.Controllers.Transport
             var jobs = await _db.TransportJobs
                 .Include(t => t.BatchOrder).ThenInclude(o => o.Batch).ThenInclude(b => b.Depot)
                 .Include(t => t.BatchOrder).ThenInclude(o => o.Factory)
+                .Include(t => t.TrackingLogs)
                 .Where(t => t.DriverId == driver.Id)
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
-            var result = jobs.Select(t => new
-            {
-                id = t.Id,
-                status = t.Status.ToString(),
-                createdAtFormatted = GetTimeAgo(t.CreatedAt),
-                depotName = t.BatchOrder.Batch.Depot.CompanyName,
-                factoryName = t.BatchOrder.Factory.CompanyName,
-                distanceKm = t.EstimatedDistanceKm ?? 15.2m,
-                materialType = t.BatchOrder.Batch.MaterialType.ToString(),
-                totalKg = t.BatchOrder.Batch.ActualWeightKg ?? t.BatchOrder.Batch.EstimatedWeightKg,
-                vehicleType = GetVehicleTypeForWeight(t.BatchOrder.Batch.ActualWeightKg ?? t.BatchOrder.Batch.EstimatedWeightKg),
-                transportFee = t.TransportFee ?? 250000m
+            var result = jobs.Select(t => {
+                var dist = t.EstimatedDistanceKm ?? CalculateDistance(
+                    t.PickupLatitude ?? t.BatchOrder.Batch.Depot.Latitude,
+                    t.PickupLongitude ?? t.BatchOrder.Batch.Depot.Longitude,
+                    t.DeliveryLatitude ?? t.BatchOrder.Factory.Latitude,
+                    t.DeliveryLongitude ?? t.BatchOrder.Factory.Longitude);
+
+                return new
+                {
+                    id = t.Id,
+                    status = t.Status.ToString(),
+                    createdAtFormatted = GetTimeAgo(t.CreatedAt),
+                    depotName = t.BatchOrder.Batch.Depot.CompanyName,
+                    factoryName = t.BatchOrder.Factory.CompanyName,
+                    distanceKm = dist,
+                    materialType = t.BatchOrder.Batch.MaterialType.ToString(),
+                    totalKg = t.BatchOrder.Batch.ActualWeightKg ?? t.BatchOrder.Batch.EstimatedWeightKg,
+                    vehicleType = GetVehicleTypeForWeight(t.BatchOrder.Batch.ActualWeightKg ?? t.BatchOrder.Batch.EstimatedWeightKg),
+                    transportFee = t.TransportFee ?? Math.Max(150000m, dist * 15000m),
+                    trackingLogs = t.TrackingLogs.OrderBy(l => l.CreatedAt).Select(l => new {
+                        id = l.Id,
+                        latitude = l.Latitude,
+                        longitude = l.Longitude,
+                        note = l.Note,
+                        logType = l.LogType,
+                        imageUrl = l.ImageUrl,
+                        createdAt = l.CreatedAt
+                    }).ToList()
+                };
             }).ToList();
 
             return Ok(result);
@@ -226,6 +254,8 @@ namespace Renats_BE.Controllers.Transport
                 TransportJobId = jobId,
                 Latitude = dto.Latitude,
                 Longitude = dto.Longitude,
+                LogType = dto.Type,
+                ImageUrl = dto.ImageUrl,
                 Note = $"[Checkin {dto.Type}] {dto.Note}",
                 CreatedAt = DateTime.UtcNow
             };
@@ -281,6 +311,26 @@ namespace Renats_BE.Controllers.Transport
             if (weightKg <= 5000) return "Xe tải 5 Tấn";
             return "Xe tải 8 Tấn";
         }
+
+        private static decimal CalculateDistance(decimal? lat1, decimal? lng1, decimal? lat2, decimal? lng2)
+        {
+            if (!lat1.HasValue || !lng1.HasValue || !lat2.HasValue || !lng2.HasValue)
+                return 15.2m;
+
+            if (lat1.Value == 0 || lng1.Value == 0 || lat2.Value == 0 || lng2.Value == 0)
+                return 15.2m;
+
+            double dLat = (double)(lat2.Value - lat1.Value) * Math.PI / 180.0;
+            double dLon = (double)(lng2.Value - lng1.Value) * Math.PI / 180.0;
+            double rLat1 = (double)lat1.Value * Math.PI / 180.0;
+            double rLat2 = (double)lat2.Value * Math.PI / 180.0;
+
+            double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                       Math.Sin(dLon / 2) * Math.Sin(dLon / 2) * Math.Cos(rLat1) * Math.Cos(rLat2);
+            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            decimal distance = (decimal)(6371 * c);
+            return Math.Round(distance, 1);
+        }
     }
 
     public class UpdateStatusDto
@@ -294,6 +344,7 @@ namespace Renats_BE.Controllers.Transport
         public decimal Latitude { get; set; }
         public decimal Longitude { get; set; }
         public string? Note { get; set; }
+        public string? ImageUrl { get; set; }
     }
 
     public class TransportRejectDto
