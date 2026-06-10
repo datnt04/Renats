@@ -224,6 +224,59 @@ const OrderTracking = () => {
     return [start, depot, end];
   };
 
+  const getLogForStep = (stepKey) => {
+    if (!selectedOrder?.transport?.trackingLogs) return null;
+    return selectedOrder.transport.trackingLogs.find(l => {
+      const noteLower = l.note?.toLowerCase() || '';
+      const typeLower = l.logType?.toLowerCase() || '';
+      
+      if (stepKey === 'checkin_shopee') {
+        return noteLower.includes('check-in cổng kho') || noteLower.includes('checkin_shopee') || typeLower.includes('shopee') || typeLower.includes('intermediate') && noteLower.includes('checkin') || typeLower.includes('checkin_intermediate');
+      }
+      if (stepKey === 'checkout_shopee') {
+        return noteLower.includes('xác thực') || noteLower.includes('checkout_shopee') || typeLower.includes('shopee') || typeLower.includes('intermediate') && noteLower.includes('checkout') || typeLower.includes('checkout_intermediate');
+      }
+      if (stepKey === 'checkin_depot') {
+        return noteLower.includes('check-in tại vựa') || noteLower.includes('checkin_depot') || typeLower.includes('depot') && noteLower.includes('checkin') || typeLower.includes('checkin_depot');
+      }
+      if (stepKey === 'checkout_depot') {
+        return noteLower.includes('chốt xuất kho vựa') || noteLower.includes('checkout_depot') || typeLower.includes('depot') && noteLower.includes('checkout') || typeLower.includes('checkout_depot');
+      }
+      if (stepKey === 'checkin_factory') {
+        return noteLower.includes('checkin_factory') || typeLower.includes('factory');
+      }
+      return false;
+    });
+  };
+
+  const renderEvidencePhoto = (stepKey, defaultImages = []) => {
+    const log = getLogForStep(stepKey);
+    if (!log) return null;
+    
+    const imgUrl = log.imageUrl || defaultImages[0];
+    
+    return (
+      <div className="mt-3 flex gap-3 flex-wrap">
+        {imgUrl && (
+          <div className="relative w-32 h-24 rounded-lg overflow-hidden border border-slate-200 shadow-sm group/img cursor-pointer" onClick={() => window.open(imgUrl, '_blank')}>
+            <img src={imgUrl} alt="Evidence image" className="object-cover w-full h-full hover:scale-105 transition-all" />
+            <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] text-center font-bold py-0.5">ẢNH MINH CHỨNG EPR</span>
+          </div>
+        )}
+        {log.imageUrl && defaultImages[1] && (
+          <div className="relative w-32 h-24 rounded-lg overflow-hidden border border-slate-200 shadow-sm group/img cursor-pointer" onClick={() => window.open(defaultImages[1], '_blank')}>
+            <img src={defaultImages[1]} alt="Evidence image 2" className="object-cover w-full h-full hover:scale-105 transition-all" />
+            <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] text-center font-bold py-0.5">ẢNH THÙNG XE</span>
+          </div>
+        )}
+        <div className="flex-1 min-w-[200px] text-xs text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-100 flex flex-col justify-between">
+          <span className="italic">" {log.note || 'Tài xế đã ghi nhận check-in/check-out phân đoạn này.'} "</span>
+          <span className="text-[10px] text-slate-400 font-semibold mt-1">📍 GPS: {log.latitude}, {log.longitude} • Lúc: {new Date(log.createdAt).toLocaleTimeString('vi-VN')} {new Date(log.createdAt).toLocaleDateString('vi-VN')}</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="font-sans text-slate-900 bg-slate-50 min-h-screen flex flex-col overflow-x-hidden">
       {/* Leaflet CSS Inject */}
@@ -453,7 +506,7 @@ const OrderTracking = () => {
                   {/* Step 1: Origin Check-in */}
                   <div className="relative">
                     <span className={`absolute -left-[41px] top-0 h-6 w-6 rounded-full flex items-center justify-center ring-4 ring-white ${
-                      selectedOrder.transport?.trackingLogs?.some(l => l.note.includes('check-in cổng Kho'))
+                      getLogForStep('checkin_shopee')
                         ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-400'
                     }`}>
                       <span className="material-symbols-outlined text-[14px]">login</span>
@@ -464,27 +517,17 @@ const OrderTracking = () => {
                         <span className="text-xs text-slate-400 font-semibold">Bắt buộc</span>
                       </div>
                       <p className="text-xs text-slate-500 mt-1">Xe tải cập bến kho bãi nguồn để bốc xếp phế liệu lên thùng xe.</p>
-                      
-                      {/* Photo evidence mock */}
-                      {selectedOrder.transport?.trackingLogs?.some(l => l.note.includes('check-in cổng Kho')) && (
-                        <div className="mt-3 flex gap-3">
-                          <div className="relative w-24 h-16 rounded-lg overflow-hidden border border-slate-200">
-                            <img src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=150" alt="Xe tai checkin" className="object-cover w-full h-full" />
-                            <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] text-center font-bold">ẢNH BIỂN SỐ XE</span>
-                          </div>
-                          <div className="relative w-24 h-16 rounded-lg overflow-hidden border border-slate-200">
-                            <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=150" alt="Thung xe trong" className="object-cover w-full h-full" />
-                            <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] text-center font-bold">THÙNG XE TRỐNG</span>
-                          </div>
-                        </div>
-                      )}
+                      {renderEvidencePhoto('checkin_shopee', [
+                        "https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?w=150",
+                        "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=150"
+                      ])}
                     </div>
                   </div>
 
                   {/* Step 2: Origin Check-out */}
                   <div className="relative">
                     <span className={`absolute -left-[41px] top-0 h-6 w-6 rounded-full flex items-center justify-center ring-4 ring-white ${
-                      selectedOrder.transport?.trackingLogs?.some(l => l.note.includes('Xác thực'))
+                      getLogForStep('checkout_shopee')
                         ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-400'
                     }`}>
                       <span className="material-symbols-outlined text-[14px]">logout</span>
@@ -492,13 +535,16 @@ const OrderTracking = () => {
                     <div>
                       <h4 className="font-bold text-slate-800 text-sm">Phân đoạn 2: Check-out Điểm tập kết phế liệu</h4>
                       <p className="text-xs text-slate-500 mt-1">Xác thực sản lượng và niêm phong thùng xe, xe lăn bánh hướng về vựa gom.</p>
+                      {renderEvidencePhoto('checkout_shopee', [
+                        "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=150"
+                      ])}
                     </div>
                   </div>
 
                   {/* Step 3: Depot Check-in */}
                   <div className="relative">
                     <span className={`absolute -left-[41px] top-0 h-6 w-6 rounded-full flex items-center justify-center ring-4 ring-white ${
-                      selectedOrder.transport?.trackingLogs?.some(l => l.note.includes('Check-in tại Vựa'))
+                      getLogForStep('checkin_depot')
                         ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-400'
                     }`}>
                       <span className="material-symbols-outlined text-[14px]">local_shipping</span>
@@ -506,13 +552,16 @@ const OrderTracking = () => {
                     <div>
                       <h4 className="font-bold text-slate-800 text-sm">Phân đoạn 3: Check-in Vựa đối tác ({selectedOrder.batch.depot.companyName})</h4>
                       <p className="text-xs text-slate-500 mt-1">Hạ tải phế liệu thô xuống trạm cân trung chuyển của vựa để ép kiện chặt tiêu chuẩn.</p>
+                      {renderEvidencePhoto('checkin_depot', [
+                        "https://images.unsplash.com/photo-1553413077-190dd305871c?w=150"
+                      ])}
                     </div>
                   </div>
 
                   {/* Step 4: Depot Check-out */}
                   <div className="relative">
                     <span className={`absolute -left-[41px] top-0 h-6 w-6 rounded-full flex items-center justify-center ring-4 ring-white ${
-                      selectedOrder.transport?.trackingLogs?.some(l => l.note.includes('Chốt xuất kho vựa'))
+                      getLogForStep('checkout_depot')
                         ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-400'
                     }`}>
                       <span className="material-symbols-outlined text-[14px]">scale</span>
@@ -520,13 +569,16 @@ const OrderTracking = () => {
                     <div>
                       <h4 className="font-bold text-slate-800 text-sm">Phân đoạn 4: Check-out Vựa (Lên kiện nén về Nhà máy)</h4>
                       <p className="text-xs text-slate-500 mt-1">Xuất xưởng kiện nén sạch. Tài xế chụp phiếu cân của vựa đối tác.</p>
+                      {renderEvidencePhoto('checkout_depot', [
+                        "https://images.unsplash.com/photo-1565793298595-6a879b1d9492?w=150"
+                      ])}
                     </div>
                   </div>
 
                   {/* Step 5: Factory Check-in */}
                   <div className="relative">
                     <span className={`absolute -left-[41px] top-0 h-6 w-6 rounded-full flex items-center justify-center ring-4 ring-white ${
-                      selectedOrder.status === 'DELIVERED' || selectedOrder.status === 'VERIFIED'
+                      selectedOrder.status === 'DELIVERED' || selectedOrder.status === 'VERIFIED' || getLogForStep('checkin_factory')
                         ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-400'
                     }`}>
                       <span className="material-symbols-outlined text-[14px]">domain</span>
@@ -534,6 +586,9 @@ const OrderTracking = () => {
                     <div>
                       <h4 className="font-bold text-slate-800 text-sm">Phân đoạn 5: Check-in Cổng Nhà Máy Re-Nats</h4>
                       <p className="text-xs text-slate-500 mt-1">Xe tải dừng tại trạm bảo vệ, quét biển số và đối chiếu mã lô số hóa.</p>
+                      {renderEvidencePhoto('checkin_factory', [
+                        "https://images.unsplash.com/photo-1527018601619-a508a2be00cd?w=150"
+                      ])}
                     </div>
                   </div>
 
@@ -552,8 +607,14 @@ const OrderTracking = () => {
                         <div className="mt-3 bg-green-50/50 border border-green-200 rounded-xl p-4 flex flex-col md:flex-row justify-between gap-4">
                           <div>
                             <p className="text-xs text-slate-500 font-bold uppercase">Khối lượng cân chốt</p>
-                            <p className="text-base font-extrabold text-slate-800">14.850 kg (Thực tế)</p>
-                            <p className="text-[10px] text-slate-400 mt-0.5">Sai lệch: -1.2% (Trong ngưỡng cho phép)</p>
+                            <p className="text-base font-extrabold text-slate-800">
+                              {(selectedOrder.batch.actualWeightKg ?? selectedOrder.batch.estimatedWeightKg)?.toLocaleString('vi-VN')} kg (Thực tế)
+                            </p>
+                            {selectedOrder.batch.actualWeightKg && (
+                              <p className="text-[10px] text-slate-400 mt-0.5">
+                                Sai lệch: {(((selectedOrder.batch.actualWeightKg - selectedOrder.batch.estimatedWeightKg) / selectedOrder.batch.estimatedWeightKg) * 100).toFixed(1)}% (Trong ngưỡng cho phép)
+                              </p>
+                            )}
                           </div>
                           <div>
                             <p className="text-xs text-slate-500 font-bold uppercase">Chất lượng KCS</p>
@@ -652,7 +713,7 @@ const OrderTracking = () => {
                         <p className="text-xs text-slate-400 mt-0.5">Xe đang chờ tại trạm cân KCS. Bạn có muốn duyệt KCS và chốt hóa đơn ngay lập tức?</p>
                       </div>
                       <Link
-                        to="/recycle/order-process"
+                        to={`/recycle/order-process?orderId=${selectedOrder.id}`}
                         className="bg-green-600 hover:bg-green-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all shadow-md shrink-0 flex items-center gap-1.5"
                       >
                         <span className="material-symbols-outlined text-base">scale</span>

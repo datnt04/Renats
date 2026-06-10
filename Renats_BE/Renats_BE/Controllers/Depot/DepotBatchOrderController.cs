@@ -167,24 +167,44 @@ public class DepotBatchOrderController : ControllerBase
             _db.BatchOrders.Add(order);
             await _db.SaveChangesAsync();
 
-            // 3. Tạo TransportJob tự động gán tài xế để chạy simulator
-            var driver = await _db.Drivers.FirstOrDefaultAsync();
+            // 3. Tạo TransportJob tự động để đưa lên chợ đơn
             var factoryObj = await _db.Factories.FindAsync(factoryId);
             
+            decimal distance = 15.2m;
+            var pLat = depot.Latitude ?? 10.8231m;
+            var pLng = depot.Longitude ?? 106.6297m;
+            var dLatVal = factoryObj?.Latitude ?? 10.7876m;
+            var dLngVal = factoryObj?.Longitude ?? 106.6346m;
+
+            if (pLat != 0 && pLng != 0 && dLatVal != 0 && dLngVal != 0)
+            {
+                double dLat = (double)(dLatVal - pLat) * Math.PI / 180.0;
+                double dLon = (double)(dLngVal - pLng) * Math.PI / 180.0;
+                double lat1 = (double)pLat * Math.PI / 180.0;
+                double lat2 = (double)dLatVal * Math.PI / 180.0;
+
+                double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                           Math.Sin(dLon / 2) * Math.Sin(dLon / 2) * Math.Cos(lat1) * Math.Cos(lat2);
+                double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+                distance = (decimal)(6371 * c);
+                distance = Math.Round(distance, 1);
+            }
+            decimal fee = Math.Max(150000m, distance * 15000m);
+
             var transport = new TransportJob
             {
                 Id = Guid.NewGuid(),
                 BatchOrderId = order.Id,
-                DriverId = driver?.Id ?? Guid.Parse("44444444-0000-0000-0000-000000000001"),
+                DriverId = null,
                 PickupAddress = depot.Address ?? "Kho trung chuyển Re-Nats",
                 DeliveryAddress = factoryObj?.Address ?? "Nhà máy tái chế",
-                PickupLatitude = depot.Latitude ?? 10.8231m,
-                PickupLongitude = depot.Longitude ?? 106.6297m,
-                DeliveryLatitude = factoryObj?.Latitude ?? 10.7876m,
-                DeliveryLongitude = factoryObj?.Longitude ?? 106.6346m,
-                EstimatedDistanceKm = 15.2m,
-                TransportFee = 250000m,
-                Status = TransportStatus.ASSIGNED,
+                PickupLatitude = pLat,
+                PickupLongitude = pLng,
+                DeliveryLatitude = dLatVal,
+                DeliveryLongitude = dLngVal,
+                EstimatedDistanceKm = distance,
+                TransportFee = fee,
+                Status = TransportStatus.PENDING,
                 CreatedAt = DateTime.UtcNow
             };
             _db.TransportJobs.Add(transport);
@@ -312,8 +332,8 @@ public class DepotBatchOrderController : ControllerBase
         batch.Status = BatchStatus.READY_FOR_PICKUP;
         batch.UpdatedAt = DateTime.UtcNow;
 
-        // Tự động tạo TransportJob nếu chọn Tài xế Re-Nats (APP_LOGISTICS)
-        if (tt == TransportType.APP_LOGISTICS)
+        // Tự động tạo TransportJob nếu chọn Tài xế Re-Nats (APP_LOGISTICS) hoặc Kho tự vận tải (SELF_DELIVERY)
+        if (tt == TransportType.APP_LOGISTICS || tt == TransportType.SELF_DELIVERY)
         {
             var order = await _db.BatchOrders.FirstOrDefaultAsync(o => o.BatchId == batch.Id);
             if (order != null)

@@ -87,14 +87,14 @@ const DashboardRecycle = () => {
         return '#86efac';
     };
 
-    const renderStatusBadge = (status) => {
+    const renderStatusBadge = (status, orderId) => {
         switch (status) {
             case 'VERIFIED':
             case 'COMPLETED':
                 return (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
-                        Đã KCS &amp; Chốt
-                    </span>
+                    <Link to={`/recycle/order-settlement?orderId=${orderId}`} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-all shadow-sm">
+                        Đã KCS &amp; Chốt (Xem HĐ)
+                    </Link>
                 );
             case 'REJECTED':
                 return (
@@ -468,7 +468,7 @@ const DashboardRecycle = () => {
                                             <td className="px-4 py-4 font-medium text-slate-700">{tx.weightKg.toLocaleString('vi-VN')} kg</td>
                                             <td className="px-4 py-4 text-slate-500">{new Date(tx.date).toLocaleDateString('vi-VN')}</td>
                                             <td className="px-4 py-4 text-right">
-                                                {renderStatusBadge(tx.status)}
+                                                {renderStatusBadge(tx.status, tx.id)}
                                             </td>
                                         </tr>
                                     ))}

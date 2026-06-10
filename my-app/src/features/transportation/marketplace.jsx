@@ -27,12 +27,13 @@ const STATUS_CONFIG = {
 // ── Bottom Navigation ──────────────────────────────────────────────────────────
 function BottomNav({ active }) {
     const navigate = useNavigate();
+    const { logout } = useAuth();
     const tabs = [
         { id: 'market',   icon: 'storefront',      label: 'Chợ đơn',  path: '/transport/market'      },
-        { id: 'trips',    icon: 'local_shipping',  label: 'Chuyến xe', path: '/van-chuyen/chuyen-xe'  },
+        { id: 'trips',    icon: 'local_shipping',  label: 'Chuyến xe', path: '/van-chuyen/chuyen-xe?tab=active' },
         { id: 'checkin',  icon: 'qr_code_scanner', label: 'QR Check', path: '/van-chuyen/checkin', center: true },
-        { id: 'history',  icon: 'history',         label: 'Lịch sử',  path: '#'                       },
-        { id: 'account',  icon: 'person',          label: 'Tài khoản', path: '#'                      },
+        { id: 'history',  icon: 'history',         label: 'Lịch sử',  path: '/van-chuyen/chuyen-xe?tab=history' },
+        { id: 'account',  icon: 'logout',          label: 'Đăng xuất', path: 'logout'                 },
     ];
     return (
         <nav className="bg-white border-t border-slate-100 px-2 pb-safe pt-2 sticky bottom-0 z-20">
@@ -49,7 +50,16 @@ function BottomNav({ active }) {
                 ) : (
                     <button
                         key={tab.id}
-                        onClick={() => tab.path !== '#' && navigate(tab.path)}
+                        onClick={() => {
+                            if (tab.path === 'logout') {
+                                if (window.confirm("Bạn có chắc chắn muốn đăng xuất?")) {
+                                    logout();
+                                    navigate('/dang-nhap');
+                                }
+                            } else if (tab.path !== '#') {
+                                navigate(tab.path);
+                            }
+                        }}
                         className={`flex flex-col items-center justify-end w-full pb-1 gap-0.5 transition-colors ${active === tab.id ? 'text-green-600' : 'text-slate-400 hover:text-green-500'}`}
                     >
                         <span className="material-symbols-outlined text-2xl">{tab.icon}</span>
@@ -69,13 +79,31 @@ function DepotSelectorScreen({ onSelect }) {
     const toast = useToast();
 
     useEffect(() => {
-        transportService.getDepotsWithJobs()
-            .then(data => setDepots(data || []))
-            .catch(() => {
-                toast.error('Không thể tải danh sách kho. Vui lòng thử lại!');
-                setDepots([]);
-            })
-            .finally(() => setLoading(false));
+        const fetchDepots = (lat = null, lng = null) => {
+            transportService.getDepotsWithJobs(lat, lng)
+                .then(data => setDepots(data || []))
+                .catch(() => {
+                    toast.error('Không thể tải danh sách kho. Vui lòng thử lại!');
+                    setDepots([]);
+                })
+                .finally(() => setLoading(false));
+        };
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    fetchDepots(lat, lng);
+                },
+                () => {
+                    fetchDepots();
+                },
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        } else {
+            fetchDepots();
+        }
     }, []);
 
     const filtered = depots.filter(d =>
