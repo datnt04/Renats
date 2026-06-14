@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../../app/AuthContext';
 import { transportService } from '../../services/transportService';
@@ -60,7 +60,7 @@ const styles = `
 `;
 
 export default function CheckinOrderStep2() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
     const toast = useToast();
     const [searchParams] = useSearchParams();
@@ -70,26 +70,36 @@ export default function CheckinOrderStep2() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
 
-    useEffect(() => {
-        const fetchJob = async () => {
-            try {
-                setLoading(true);
-                const myJobs = await transportService.getMyJobs();
-                let selectedJob = null;
-                if (jobIdParam) {
-                    selectedJob = myJobs.find(j => j.id === jobIdParam);
-                } else {
-                    selectedJob = myJobs.find(j => j.status === 'ON_THE_WAY');
-                }
-                setJob(selectedJob || null);
-            } catch (err) {
-                toast?.error('Không thể tải thông tin hành trình.');
-            } finally {
-                setLoading(false);
+    // Intermediate checkpoint states
+    const [note, setNote] = useState('');
+    const [file, setFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState('');
+    const [uploading, setUploading] = useState(false);
+    const [savingCheckpoint, setSavingCheckpoint] = useState(false);
+
+    const fetchJob = useCallback(async () => {
+        try {
+            const myJobs = await transportService.getMyJobs();
+            let selectedJob = null;
+            if (jobIdParam) {
+                selectedJob = myJobs.find(j => j.id === jobIdParam);
+            } else {
+                selectedJob = myJobs.find(j => j.status === 'ON_THE_WAY') || myJobs.find(j => j.status === 'ASSIGNED');
             }
-        };
-        fetchJob();
+            setJob(selectedJob || null);
+        } catch (err) {
+            toast?.error('Không thể tải thông tin hành trình.');
+        }
     }, [jobIdParam, toast]);
+
+    useEffect(() => {
+        const init = async () => {
+            setLoading(true);
+            await fetchJob();
+            setLoading(false);
+        };
+        init();
+    }, [fetchJob]);
 
     const handleArriveAtFactory = async () => {
         if (!job) return;
@@ -101,20 +111,83 @@ export default function CheckinOrderStep2() {
 
             // 2. Check-in tại điểm giao hàng (Nhà máy)
             await transportService.checkin(job.id, {
-                type: 'FACTORY',
+                type: 'checkin_factory',
                 latitude: 10.7231,
                 longitude: 106.6124,
-                note: 'Tài xế đã đến nhà máy và hoàn thành giao hàng thành công.'
+                note: 'Tài xế đã đến nhà máy và hoàn thành giao hàng thành công.',
+                imageUrl: 'https://images.unsplash.com/photo-1527018601619-a508a2be00cd?w=400'
             });
 
             toast?.success('Đã cập nhật trạng thái đơn: Giao hàng thành công!');
-            navigate('/van-chuyen/chuyen-xe');
+            navigate('/van-chuyen/chuyen-xe?tab=history');
         } catch (err) {
             toast?.error('Lỗi khi cập nhật trạng thái giao hàng.');
         } finally {
             setSubmitting(false);
         }
     };
+
+    const lastLog = job?.trackingLogs && job.trackingLogs.length > 0 
+        ? job.trackingLogs[job.trackingLogs.length - 1] 
+        : null;
+    
+    const nextLogType = lastLog?.logType === 'CHECKIN' ? 'CHECKOUT' : 'CHECKIN';
+
+    const handleAddCheckpoint = async () => {
+        if (!job) return;
+        if (!file) {
+            toast?.error('Vui lòng chụp hoặc chọn ảnh minh chứng.');
+            return;
+        }
+
+        try {
+            setUploading(true);
+            const uploadRes = await transportService.uploadImage(file);
+            const imageUrl = uploadRes.url;
+            setUploading(false);
+
+            setSavingCheckpoint(true);
+            let lat = 10.7231;
+            let lng = 106.6124;
+
+            if (navigator.geolocation) {
+                try {
+                    const pos = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+                    });
+                    lat = pos.coords.latitude;
+                    lng = pos.coords.longitude;
+                } catch (e) {
+                    console.log('Location access error or timeout');
+                }
+            }
+
+            await transportService.checkin(job.id, {
+                type: nextLogType,
+                latitude: lat,
+                longitude: lng,
+                note: note || (nextLogType === 'CHECKIN' ? 'Dừng nghỉ dọc đường' : 'Tiếp tục hành trình'),
+                imageUrl: imageUrl
+            });
+
+            toast?.success(`Báo cáo ${nextLogType === 'CHECKIN' ? 'Dừng nghỉ' : 'Tiếp tục'} thành công!`);
+            
+            setNote('');
+            setFile(null);
+            setPreviewUrl('');
+            
+            await fetchJob();
+        } catch (err) {
+            toast?.error(err.message || 'Lỗi khi lưu báo cáo hành trình.');
+        } finally {
+            setUploading(false);
+            setSavingCheckpoint(false);
+        }
+    };
+
+    const checkinCount = job?.trackingLogs?.filter(log => log.logType === 'CHECKIN').length || 0;
+    const checkoutCount = job?.trackingLogs?.filter(log => log.logType === 'CHECKOUT').length || 0;
+    const canConfirmArrival = checkinCount >= 2 && checkoutCount >= 2;
 
     if (loading) {
         return (
@@ -224,6 +297,158 @@ export default function CheckinOrderStep2() {
                         </div>
                     </div>
 
+                    {/* Báo cáo dọc đường (Check-in/Check-out) */}
+                    <div className="driver-card p-5 mb-6 w-full border border-slate-100 shadow-sm bg-white">
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="material-symbols-outlined text-green-600">route</span>
+                            <h3 className="font-bold text-slate-800 text-sm">Báo cáo dọc đường (EPR)</h3>
+                        </div>
+
+                        {/* Counts and status message */}
+                        <div className="mb-4 bg-slate-50 rounded-xl p-3 border border-slate-200">
+                            <p className="text-xs text-slate-500 font-semibold mb-1">
+                                Tiến độ báo cáo dọc đường:
+                            </p>
+                            <div className="flex gap-4 text-xs font-bold text-slate-700">
+                                <span>Check-in: {checkinCount}/2</span>
+                                <span>Check-out: {checkoutCount}/2</span>
+                            </div>
+                            <div className="mt-2 text-[10px] leading-relaxed">
+                                {canConfirmArrival ? (
+                                    <span className="text-green-600 font-bold flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-xs">check_circle</span>
+                                        Đã đủ điều kiện để xác nhận đã đến Nhà máy.
+                                    </span>
+                                ) : (
+                                    <span className="text-amber-600 font-semibold flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-xs">warning</span>
+                                        Cần tối thiểu 2 lần Check-in và 2 lần Check-out dọc đường.
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Checkpoint submission form */}
+                        <div className="space-y-3 pt-2 border-t border-slate-100">
+                            <h4 className="text-xs font-bold text-slate-700">
+                                Báo cáo lần tới: <span className="text-blue-600">{nextLogType === 'CHECKIN' ? 'Dừng nghỉ (Check-in)' : 'Tiếp tục di chuyển (Check-out)'}</span>
+                            </h4>
+
+                            {/* Image selector */}
+                            <div
+                                onClick={() => !uploading && !savingCheckpoint && document.getElementById('checkpoint-file-input').click()}
+                                className="border border-dashed border-slate-300 rounded-xl p-3 bg-white hover:bg-slate-50 transition-colors cursor-pointer text-center relative overflow-hidden"
+                            >
+                                <input
+                                    id="checkpoint-file-input"
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                            setFile(e.target.files[0]);
+                                            setPreviewUrl(URL.createObjectURL(e.target.files[0]));
+                                        }
+                                    }}
+                                />
+                                {previewUrl ? (
+                                    <div className="relative h-28 w-full">
+                                        <img src={previewUrl} alt="Preview" className="h-full w-full object-cover rounded-lg" />
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                            <span className="text-white text-xs font-semibold">Nhấn để thay đổi ảnh</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-2">
+                                        <span className="material-symbols-outlined text-slate-400 text-2xl mb-1">add_a_photo</span>
+                                        <p className="text-[10px] text-slate-500 font-medium">Chụp ảnh chứng minh vị trí dọc đường</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Note input */}
+                            <div>
+                                <textarea
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 resize-none"
+                                    placeholder={nextLogType === 'CHECKIN' ? 'Ghi chú dừng nghỉ (Ví dụ: Trạm dừng chân Đức Hòa)' : 'Ghi chú tiếp tục đi (Ví dụ: Tiếp tục hành trình)'}
+                                    rows={2}
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleAddCheckpoint}
+                                disabled={uploading || savingCheckpoint || !file}
+                                className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-bold text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <span className="material-symbols-outlined text-base">send</span>
+                                {uploading ? 'Đang upload ảnh...' : savingCheckpoint ? 'Đang lưu báo cáo...' : `Gửi Báo cáo ${nextLogType === 'CHECKIN' ? 'Dừng nghỉ' : 'Tiếp tục'}`}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Lịch sử nhật ký hành trình */}
+                    {job.trackingLogs && job.trackingLogs.length > 0 && (
+                        <div className="driver-card p-5 mb-6 w-full border border-slate-100 shadow-sm bg-white">
+                            <h3 className="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-slate-500">timeline</span>
+                                Nhật ký hành trình
+                            </h3>
+                            <div className="relative pl-4 border-l-2 border-slate-200 space-y-4">
+                                {job.trackingLogs.map((log) => {
+                                    const isCheckin = log.logType === 'CHECKIN';
+                                    const isCheckout = log.logType === 'CHECKOUT';
+                                    const isDepot = log.logType === 'DEPOT';
+                                    const isFactory = log.logType === 'FACTORY';
+                                    
+                                    let badgeColor = 'bg-slate-100 text-slate-700';
+                                    let typeLabel = log.logType;
+                                    if (isCheckin) {
+                                        badgeColor = 'bg-amber-100 text-amber-700';
+                                        typeLabel = 'Check-in';
+                                    } else if (isCheckout) {
+                                        badgeColor = 'bg-blue-100 text-blue-700';
+                                        typeLabel = 'Check-out';
+                                    } else if (isDepot) {
+                                        badgeColor = 'bg-green-100 text-green-700';
+                                        typeLabel = 'Bắt đầu';
+                                    } else if (isFactory) {
+                                        badgeColor = 'bg-purple-100 text-purple-700';
+                                        typeLabel = 'Hoàn thành';
+                                    }
+
+                                    return (
+                                        <div key={log.id} className="relative">
+                                            {/* Bullet dot */}
+                                            <div className={`absolute -left-[23px] top-1.5 w-3 h-3 rounded-full border-2 border-white ${
+                                                isCheckin ? 'bg-amber-500' :
+                                                isCheckout ? 'bg-blue-500' :
+                                                isDepot ? 'bg-green-500' : 'bg-purple-500'
+                                            }`} />
+                                            
+                                            <div className="text-xs text-left">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${badgeColor}`}>{typeLabel}</span>
+                                                    <span className="text-[10px] text-slate-400 font-medium">
+                                                        {new Date(log.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                                <p className="text-slate-600 mt-1 font-medium leading-relaxed">{log.note}</p>
+                                                {log.imageUrl && (
+                                                    <div className="mt-1.5 max-w-[120px] rounded-lg overflow-hidden border border-slate-100 shadow-sm cursor-pointer" onClick={() => window.open(log.imageUrl, '_blank')}>
+                                                        <img src={log.imageUrl} alt="evidence" className="w-full h-16 object-cover" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Action buttons */}
                     <div className="flex flex-col gap-3 w-full mt-auto mb-6">
                         <a
@@ -239,14 +464,19 @@ export default function CheckinOrderStep2() {
                         </a>
 
                         <button
-                            className="arrive-btn relative w-full bg-green-600 hover:bg-green-700 text-white font-bold text-base py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-60"
+                            className="arrive-btn relative w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-300 disabled:text-slate-500 text-white font-bold text-base py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                             onClick={handleArriveAtFactory}
-                            disabled={submitting}
+                            disabled={submitting || !canConfirmArrival}
                         >
                             <span className="material-symbols-outlined text-2xl">where_to_vote</span>
                             {submitting ? 'Đang xác nhận...' : 'Xác nhận đã đến Nhà máy'}
                         </button>
 
+                        {!canConfirmArrival && (
+                            <p className="text-amber-600 text-center font-semibold text-[10px]">
+                                * Vui lòng thực hiện tối thiểu 2 lần check-in và 2 lần check-out dọc đường để mở khóa nút xác nhận.
+                            </p>
+                        )}
                         <p className="text-center text-slate-400 text-[10px] mt-1">
                             Nhấn "Xác nhận đã đến" khi xe đã đỗ an toàn tại cổng nhà máy
                         </p>
@@ -260,7 +490,7 @@ export default function CheckinOrderStep2() {
                             <span className="material-symbols-outlined text-2xl">storefront</span>
                             <span className="text-[10px] font-medium">Chợ đơn</span>
                         </Link>
-                        <Link to="/van-chuyen/chuyen-xe" className="nav-item nav-item-active flex flex-col items-center gap-1 p-2 w-16 text-green-600">
+                        <Link to="/van-chuyen/chuyen-xe?tab=active" className="nav-item nav-item-active flex flex-col items-center gap-1 p-2 w-16 text-green-600">
                             <span className="material-symbols-outlined text-2xl font-semibold">local_shipping</span>
                             <span className="text-[10px] font-medium">Chuyến đi</span>
                         </Link>
@@ -272,13 +502,21 @@ export default function CheckinOrderStep2() {
                                 QR Code
                             </span>
                         </div>
-                        <button className="nav-item flex flex-col items-center gap-1 p-2 w-16 text-slate-400">
+                        <Link to="/van-chuyen/chuyen-xe?tab=history" className="nav-item flex flex-col items-center gap-1 p-2 w-16 text-slate-400 font-medium">
                             <span className="material-symbols-outlined text-2xl">history</span>
                             <span className="text-[10px] font-medium">Lịch sử</span>
-                        </button>
-                        <button className="nav-item flex flex-col items-center gap-1 p-2 w-16 text-slate-400">
-                            <span className="material-symbols-outlined text-2xl">person</span>
-                            <span className="text-[10px] font-medium">Tài khoản</span>
+                        </Link>
+                        <button
+                            onClick={() => {
+                                if (window.confirm("Bạn có chắc chắn muốn đăng xuất?")) {
+                                    logout();
+                                    navigate('/dang-nhap');
+                                }
+                            }}
+                            className="nav-item flex flex-col items-center gap-1 p-2 w-16 text-slate-400"
+                        >
+                            <span className="material-symbols-outlined text-2xl">logout</span>
+                            <span className="text-[10px] font-medium">Đăng xuất</span>
                         </button>
                     </div>
                 </nav>
