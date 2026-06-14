@@ -93,7 +93,7 @@ CREATE TABLE users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
 
-    role user_role NOT NULL,
+    role VARCHAR(50) NOT NULL,
 
     full_name VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
@@ -188,7 +188,7 @@ CREATE TABLE inventory_batches (
 
     batch_code VARCHAR(100) UNIQUE NOT NULL,
 
-    material_type material_type NOT NULL,
+    material_type VARCHAR(50) NOT NULL,
 
     estimated_weight_kg DECIMAL(14,2) NOT NULL,
 
@@ -203,9 +203,9 @@ CREATE TABLE inventory_batches (
 
     thumbnail_image_url TEXT,
 
-    status batch_status DEFAULT 'DRAFT',
+    status VARCHAR(50) DEFAULT 'DRAFT',
 
-    transport_type transport_type,
+    transport_type VARCHAR(50),
 
     listed_at TIMESTAMP,
     accepted_at TIMESTAMP,
@@ -245,7 +245,7 @@ CREATE TABLE batch_bids (
 
     note TEXT,
 
-    status bid_status DEFAULT 'PENDING',
+    status VARCHAR(50) DEFAULT 'PENDING',
 
     created_at TIMESTAMP DEFAULT NOW()
 );
@@ -267,7 +267,7 @@ CREATE TABLE batch_orders (
 
     total_amount DECIMAL(14,2),
 
-    status batch_status NOT NULL,
+    status VARCHAR(50) NOT NULL,
 
     created_at TIMESTAMP DEFAULT NOW()
 );
@@ -296,7 +296,7 @@ CREATE TABLE transport_jobs (
 
     transport_fee DECIMAL(14,2),
 
-    status transport_status DEFAULT 'PENDING',
+    status VARCHAR(50) DEFAULT 'PENDING',
 
     pickup_time TIMESTAMP,
     delivered_time TIMESTAMP,
@@ -384,7 +384,7 @@ CREATE TABLE invoices (
     vat_amount DECIMAL(14,2),
     total_amount DECIMAL(14,2),
 
-    status invoice_status DEFAULT 'PENDING',
+    status VARCHAR(50) DEFAULT 'PENDING',
 
     uploaded_by UUID REFERENCES users(id),
 
@@ -404,7 +404,7 @@ CREATE TABLE epr_certificates (
 
     hash_value TEXT NOT NULL,
 
-    material_type material_type NOT NULL,
+    material_type VARCHAR(50) NOT NULL,
 
     certified_weight_kg DECIMAL(14,2),
 
