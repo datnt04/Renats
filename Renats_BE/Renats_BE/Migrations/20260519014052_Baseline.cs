@@ -151,6 +151,9 @@ CREATE TABLE factories (
     contact_person VARCHAR(255),
     contact_phone VARCHAR(20),
 
+    is_premium BOOLEAN DEFAULT FALSE,
+    premium_expires_at TIMESTAMP,
+
     created_at TIMESTAMP DEFAULT NOW()
 );
 
